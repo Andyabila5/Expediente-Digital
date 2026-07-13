@@ -32,10 +32,6 @@ export default function Login() {
         <div className="login-copy">
           <span className="login-eyebrow">Acceso protegido</span>
           <h1>Expediente Digital</h1>
-          <p>
-            Este acceso es local para el MVP. Usuario por defecto: <strong>admin</strong> · contraseña:{' '}
-            <strong>admin123</strong>
-          </p>
         </div>
 
         <form className="login-form" onSubmit={handleSubmit}>
