@@ -1,0 +1,54 @@
+.login-shell {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 1.5rem;
+  background:
+    radial-gradient(circle at top right, rgba(136, 124, 111, 0.12), transparent 28%),
+    linear-gradient(180deg, var(--color-bg-soft), var(--color-bg));
+}
+
+.login-card {
+  width: min(100%, 440px);
+  padding: 1.5rem;
+}
+
+.login-copy {
+  margin-bottom: 1rem;
+}
+
+.login-eyebrow {
+  display: inline-flex;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  background: var(--color-accent-soft);
+  color: var(--color-accent-strong);
+  font-size: 0.76rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+}
+
+.login-copy h1 {
+  font-size: 1.55rem;
+  margin-bottom: 0.35rem;
+}
+
+.login-copy p {
+  font-size: 0.88rem;
+  color: var(--color-text-muted);
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.login-alert {
+  margin-bottom: 0;
+}
+
+.login-submit {
+  width: 100%;
+  justify-content: center;
+}

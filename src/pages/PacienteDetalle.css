@@ -1,0 +1,117 @@
+.datos-paciente h3 {
+  font-size: 1.1rem;
+  margin-bottom: 1rem;
+  color: var(--color-text);
+}
+
+.datos-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.dato-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.dato-item.full-width {
+  grid-column: 1 / -1;
+}
+
+.dato-label {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.dato-value {
+  font-size: 0.95rem;
+  color: var(--color-text);
+}
+
+.expediente-page {
+  max-width: 900px;
+}
+
+.secciones-expediente {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.seccion-card {
+  min-height: 200px;
+}
+
+.seccion-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.seccion-header h3 {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1rem;
+  color: var(--color-text);
+}
+
+.badge {
+  background: var(--color-accent-soft);
+  color: var(--color-accent-strong);
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.15rem 0.5rem;
+  border-radius: 99px;
+}
+
+.sin-datos {
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+  font-style: italic;
+}
+
+.resultados-lista {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.resultados-lista li {
+  padding: 0.75rem;
+  background: var(--color-surface-strong);
+  border-radius: 8px;
+  border-left: 3px solid var(--color-accent);
+}
+
+.resultados-lista li strong {
+  display: block;
+  font-size: 0.9rem;
+  color: var(--color-text);
+}
+
+.resultados-lista li span {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+.resultados-lista li p {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  margin-top: 0.25rem;
+}
+
+@media (max-width: 768px) {
+  .datos-grid,
+  .secciones-expediente {
+    grid-template-columns: 1fr;
+  }
+}

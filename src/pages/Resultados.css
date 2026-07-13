@@ -1,0 +1,71 @@
+.filtro-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.filtro-bar label {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  font-weight: 500;
+}
+
+.filtro-bar select {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  font-size: 0.9rem;
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.resultados-tabla {
+  overflow-x: auto;
+}
+
+.resultados-tabla table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.resultados-tabla th {
+  text-align: left;
+  padding: 0.75rem 1rem;
+  background: var(--color-surface-strong);
+  color: var(--color-text-muted);
+  font-weight: 600;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  border-bottom: 2px solid var(--color-border);
+}
+
+.resultados-tabla td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--color-border);
+  vertical-align: top;
+}
+
+.resultados-tabla tr:hover td {
+  background: var(--color-surface-strong);
+}
+
+.resultado-cell {
+  max-width: 300px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+}
+
+.acciones-cell {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.resultados-tabla tr.row-editing td {
+  background: var(--color-accent-soft);
+}
