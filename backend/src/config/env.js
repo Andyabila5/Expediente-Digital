@@ -12,9 +12,18 @@ function getEnv(name, fallback = '') {
   return process.env[name]?.trim() || fallback
 }
 
+function getBooleanEnv(name, fallback = false) {
+  const value = getEnv(name, fallback ? 'true' : 'false').toLowerCase()
+  return ['1', 'true', 'yes', 'on'].includes(value)
+}
+
 export const env = {
   port: Number(getEnv('BACKEND_PORT', '3001')),
   frontendUrl: getEnv('FRONTEND_URL', 'http://localhost:5173'),
+  database: {
+    url: getEnv('DATABASE_URL', getEnv('SUPABASE_DB_URL')),
+    ssl: getBooleanEnv('DATABASE_SSL', true),
+  },
   google: {
     clientId: getEnv('GOOGLE_CLIENT_ID'),
     clientSecret: getEnv('GOOGLE_CLIENT_SECRET'),

@@ -7,11 +7,13 @@ import type { PacienteFormData } from '../types'
 import './Pacientes.css'
 
 export default function Pacientes() {
-  const { pacientes, agregarPaciente, eliminarPaciente } = useExpediente()
+  const { pacientes, agregarPaciente, eliminarPaciente, loading, error } = useExpediente()
   const navigate = useNavigate()
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState<PacienteFormData>(EMPTY_PACIENTE_FORM)
   const [busqueda, setBusqueda] = useState('')
+  const [guardando, setGuardando] = useState(false)
+  const [eliminandoId, setEliminandoId] = useState<string | null>(null)
 
   const pacientesFiltrados = pacientes.filter(p =>
     p.nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
@@ -19,13 +21,20 @@ export default function Pacientes() {
     p.cedula.includes(busqueda)
   )
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!form.nombre.trim()) return
-    const nuevo = agregarPaciente(form)
-    setForm(EMPTY_PACIENTE_FORM)
-    setShowForm(false)
-    navigate(`/paciente/${nuevo.id}`)
+
+    setGuardando(true)
+
+    try {
+      const nuevo = await agregarPaciente(form)
+      setForm(EMPTY_PACIENTE_FORM)
+      setShowForm(false)
+      navigate(`/paciente/${nuevo.id}`)
+    } finally {
+      setGuardando(false)
+    }
   }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -44,12 +53,16 @@ export default function Pacientes() {
         </button>
       </div>
 
+      {error && <div className="alert">{error}</div>}
+
       {showForm && (
         <form className="card form-card" onSubmit={handleSubmit}>
           <h3>Registrar nuevo expediente</h3>
           <PacienteFormFields form={form} onChange={handleChange} />
           <div className="form-actions">
-            <button type="submit" className="btn btn-primary">Guardar expediente</button>
+            <button type="submit" className="btn btn-primary" disabled={guardando}>
+              {guardando ? 'Guardando...' : 'Guardar expediente'}
+            </button>
           </div>
         </form>
       )}
@@ -63,7 +76,11 @@ export default function Pacientes() {
         />
       </div>
 
-      {pacientesFiltrados.length === 0 ? (
+      {loading ? (
+        <div className="empty-state card">
+          <p>Cargando pacientes...</p>
+        </div>
+      ) : pacientesFiltrados.length === 0 ? (
         <div className="empty-state card">
           <p>{busqueda ? 'No se encontraron pacientes' : 'No hay pacientes registrados'}</p>
           {!busqueda && (
@@ -99,11 +116,13 @@ export default function Pacientes() {
                   className="btn btn-danger btn-sm"
                   onClick={() => {
                     if (confirm(`¿Eliminar el expediente de ${paciente.nombre}?`)) {
-                      eliminarPaciente(paciente.id)
+                      setEliminandoId(paciente.id)
+                      void eliminarPaciente(paciente.id).finally(() => setEliminandoId(current => (current === paciente.id ? null : current)))
                     }
                   }}
+                  disabled={eliminandoId === paciente.id}
                 >
-                  Eliminar
+                  {eliminandoId === paciente.id ? 'Eliminando...' : 'Eliminar'}
                 </button>
               </div>
             </div>

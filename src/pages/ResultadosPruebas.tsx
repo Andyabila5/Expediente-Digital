@@ -23,6 +23,8 @@ function toFormData(resultado: ResultadoPrueba): ResultadoPruebaFormData {
 
 export default function ResultadosPruebas() {
   const {
+    loading,
+    error,
     pacientes,
     resultadosPruebas,
     agregarResultadoPrueba,
@@ -33,6 +35,9 @@ export default function ResultadosPruebas() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [form, setForm] = useState<ResultadoPruebaFormData>(emptyForm())
   const [filtroPaciente, setFiltroPaciente] = useState('')
+  const [archivo, setArchivo] = useState<File | null>(null)
+  const [guardando, setGuardando] = useState(false)
+  const [eliminandoId, setEliminandoId] = useState<string | null>(null)
 
   const resultadosFiltrados = filtroPaciente
     ? resultadosPruebas.filter(r => r.pacienteId === filtroPaciente)
@@ -43,6 +48,7 @@ export default function ResultadosPruebas() {
 
   const resetForm = () => {
     setForm(emptyForm())
+    setArchivo(null)
     setEditingId(null)
     setShowForm(false)
   }
@@ -53,27 +59,37 @@ export default function ResultadosPruebas() {
       return
     }
     setForm(emptyForm())
+    setArchivo(null)
     setEditingId(null)
     setShowForm(true)
   }
 
   const iniciarEdicion = (resultado: ResultadoPrueba) => {
     setForm(toFormData(resultado))
+    setArchivo(null)
     setEditingId(resultado.id)
     setShowForm(true)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const resultadoEditando = editingId ? resultadosPruebas.find(item => item.id === editingId) : null
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!form.pacienteId || !form.nombrePrueba.trim()) return
 
-    if (editingId) {
-      actualizarResultadoPrueba(editingId, form)
-    } else {
-      agregarResultadoPrueba(form)
+    setGuardando(true)
+
+    try {
+      if (editingId) {
+        await actualizarResultadoPrueba(editingId, form, archivo)
+      } else {
+        await agregarResultadoPrueba(form, archivo)
+      }
+      resetForm()
+    } finally {
+      setGuardando(false)
     }
-    resetForm()
   }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -96,13 +112,21 @@ export default function ResultadosPruebas() {
         </button>
       </div>
 
-      {pacientes.length === 0 && (
+      {error && <div className="alert">{error}</div>}
+
+      {loading && (
+        <div className="empty-state card">
+          <p>Cargando resultados de pruebas...</p>
+        </div>
+      )}
+
+      {!loading && pacientes.length === 0 && (
         <div className="alert">
           Primero debes registrar al menos un paciente para agregar resultados.
         </div>
       )}
 
-      {showForm && (
+      {showForm && !loading && (
         <form className="card form-card" onSubmit={handleSubmit}>
           <h3>{editingId ? 'Editar resultado de prueba' : 'Registrar resultado de prueba'}</h3>
           <div className="form-grid">
@@ -154,13 +178,29 @@ export default function ResultadosPruebas() {
                 rows={2}
               />
             </div>
+            <div className="form-group full-width">
+              <label htmlFor="archivoPrueba">Adjunto JPG o PDF</label>
+              <input
+                id="archivoPrueba"
+                type="file"
+                accept=".jpg,.jpeg,.pdf,application/pdf,image/jpeg"
+                onChange={event => setArchivo(event.target.files?.[0] ?? null)}
+              />
+              <p className="input-help">
+                {archivo
+                  ? `Archivo seleccionado: ${archivo.name}`
+                  : resultadoEditando?.archivo
+                    ? `Archivo actual: ${resultadoEditando.archivo.nombre}. Si cargas uno nuevo, reemplaza el actual.`
+                    : 'Puedes adjuntar una imagen JPG o un PDF.'}
+              </p>
+            </div>
           </div>
           <div className="form-actions">
             <button type="button" className="btn btn-secondary" onClick={resetForm}>
               Cancelar
             </button>
-            <button type="submit" className="btn btn-primary">
-              {editingId ? 'Guardar cambios' : 'Guardar resultado'}
+            <button type="submit" className="btn btn-primary" disabled={guardando}>
+              {guardando ? 'Guardando...' : editingId ? 'Guardar cambios' : 'Guardar resultado'}
             </button>
           </div>
         </form>
@@ -176,7 +216,7 @@ export default function ResultadosPruebas() {
         </select>
       </div>
 
-      {resultadosFiltrados.length === 0 ? (
+      {loading ? null : resultadosFiltrados.length === 0 ? (
         <div className="empty-state card">
           <p>No hay resultados de pruebas registrados</p>
         </div>
@@ -189,6 +229,7 @@ export default function ResultadosPruebas() {
                 <th>Prueba</th>
                 <th>Fecha</th>
                 <th>Resultado</th>
+                <th>Adjunto</th>
                 <th>Acciones</th>
               </tr>
             </thead>
@@ -199,6 +240,15 @@ export default function ResultadosPruebas() {
                   <td><strong>{r.nombrePrueba}</strong></td>
                   <td>{new Date(r.fecha).toLocaleDateString('es-MX')}</td>
                   <td className="resultado-cell">{r.resultado}</td>
+                  <td>
+                    {r.archivo ? (
+                      <a className="archivo-link" href={r.archivo.url} target="_blank" rel="noreferrer">
+                        {r.archivo.nombre}
+                      </a>
+                    ) : (
+                      <span className="archivo-empty">Sin archivo</span>
+                    )}
+                  </td>
                   <td>
                     <div className="acciones-cell">
                       <button
@@ -212,11 +262,15 @@ export default function ResultadosPruebas() {
                         onClick={() => {
                           if (confirm('¿Eliminar este resultado?')) {
                             if (editingId === r.id) resetForm()
-                            eliminarResultadoPrueba(r.id)
+                            setEliminandoId(r.id)
+                            void eliminarResultadoPrueba(r.id).finally(() =>
+                              setEliminandoId(current => (current === r.id ? null : current)),
+                            )
                           }
                         }}
+                        disabled={eliminandoId === r.id}
                       >
-                        Eliminar
+                        {eliminandoId === r.id ? 'Eliminando...' : 'Eliminar'}
                       </button>
                     </div>
                   </td>

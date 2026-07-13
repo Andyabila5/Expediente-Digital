@@ -69,3 +69,25 @@
 .resultados-tabla tr.row-editing td {
   background: var(--color-accent-soft);
 }
+
+.input-help {
+  margin: 0.45rem 0 0;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+.archivo-link {
+  color: var(--color-accent);
+  text-decoration: none;
+  font-weight: 600;
+  word-break: break-word;
+}
+
+.archivo-link:hover {
+  text-decoration: underline;
+}
+
+.archivo-empty {
+  color: var(--color-text-muted);
+  font-size: 0.82rem;
+}

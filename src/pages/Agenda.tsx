@@ -55,7 +55,7 @@ function addMinutes(isoDateTime: string, minutes: number) {
 export default function Agenda() {
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
-  const { pacientes, citas, agregarCita, actualizarCita, eliminarCita } = useExpediente()
+  const { pacientes, citas, agregarCita, actualizarCita, eliminarCita, loading, error } = useExpediente()
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [busqueda, setBusqueda] = useState('')
@@ -71,6 +71,8 @@ export default function Agenda() {
   const [creatingGoogleEventId, setCreatingGoogleEventId] = useState<string | null>(null)
   const [openingGoogleAuth, setOpeningGoogleAuth] = useState(false)
   const [testPhone, setTestPhone] = useState('')
+  const [savingAppointment, setSavingAppointment] = useState(false)
+  const [deletingAppointmentId, setDeletingAppointmentId] = useState<string | null>(null)
 
   const pacientesMap = useMemo(
     () => new Map(pacientes.map(paciente => [paciente.id, paciente])),
@@ -307,17 +309,23 @@ export default function Agenda() {
     }
   }
 
-  const handleSubmit = (event: React.FormEvent) => {
+  const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault()
     if (!form.pacienteId || !form.fechaHora || !form.motivo.trim()) return
 
-    if (editingId) {
-      actualizarCita(editingId, form)
-    } else {
-      agregarCita(form)
-    }
+    setSavingAppointment(true)
 
-    resetForm()
+    try {
+      if (editingId) {
+        await actualizarCita(editingId, form)
+      } else {
+        await agregarCita(form)
+      }
+
+      resetForm()
+    } finally {
+      setSavingAppointment(false)
+    }
   }
 
   const handleEdit = (id: string) => {
@@ -333,6 +341,16 @@ export default function Agenda() {
       recordatorioWhatsApp: cita.recordatorioWhatsApp,
     })
     setShowForm(true)
+  }
+
+  if (loading) {
+    return (
+      <div className="page">
+        <div className="empty-state card">
+          <p>Cargando agenda...</p>
+        </div>
+      </div>
+    )
   }
 
   if (pacientes.length === 0) {
@@ -373,6 +391,8 @@ export default function Agenda() {
           {showForm ? 'Cerrar formulario' : '+ Nueva cita'}
         </button>
       </div>
+
+      {error && <div className="alert">{error}</div>}
 
       <div className="agenda-summary">
         <div className="card summary-card">
@@ -578,8 +598,8 @@ export default function Agenda() {
             <button type="button" className="btn btn-secondary" onClick={resetForm}>
               Cancelar
             </button>
-            <button type="submit" className="btn btn-primary">
-              {editingId ? 'Guardar cita' : 'Crear cita'}
+            <button type="submit" className="btn btn-primary" disabled={savingAppointment}>
+              {savingAppointment ? 'Guardando...' : editingId ? 'Guardar cita' : 'Crear cita'}
             </button>
           </div>
         </form>
@@ -673,11 +693,15 @@ export default function Agenda() {
                     className="btn btn-danger btn-sm"
                     onClick={() => {
                       if (confirm('¿Eliminar esta cita?')) {
-                        eliminarCita(cita.id)
+                        setDeletingAppointmentId(cita.id)
+                        void eliminarCita(cita.id).finally(() =>
+                          setDeletingAppointmentId(current => (current === cita.id ? null : current)),
+                        )
                       }
                     }}
+                    disabled={deletingAppointmentId === cita.id}
                   >
-                    Eliminar
+                    {deletingAppointmentId === cita.id ? 'Eliminando...' : 'Eliminar'}
                   </button>
                 </div>
               </article>

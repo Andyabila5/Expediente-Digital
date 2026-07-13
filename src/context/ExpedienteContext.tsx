@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, type ReactNode } from 'react'
+import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react'
 import type {
   Paciente,
   PacienteFormData,
@@ -9,96 +9,160 @@ import type {
   Cita,
   CitaFormData,
 } from '../types'
-import { loadData, saveData, generateId } from '../utils/storage'
+import {
+  createCita as createCitaRequest,
+  createPaciente as createPacienteRequest,
+  createResultadoLaboratorio as createResultadoLaboratorioRequest,
+  createResultadoPrueba as createResultadoPruebaRequest,
+  deleteCita as deleteCitaRequest,
+  deletePaciente as deletePacienteRequest,
+  deleteResultadoLaboratorio as deleteResultadoLaboratorioRequest,
+  deleteResultadoPrueba as deleteResultadoPruebaRequest,
+  fetchExpedienteData,
+  updateCita as updateCitaRequest,
+  updatePaciente as updatePacienteRequest,
+  updateResultadoLaboratorio as updateResultadoLaboratorioRequest,
+  updateResultadoPrueba as updateResultadoPruebaRequest,
+} from '../utils/api'
 
 interface ExpedienteContextType {
+  loading: boolean
+  error: string
   pacientes: Paciente[]
   resultadosPruebas: ResultadoPrueba[]
   resultadosLaboratorio: ResultadoLaboratorio[]
   citas: Cita[]
-  agregarPaciente: (data: PacienteFormData) => Paciente
-  actualizarPaciente: (id: string, data: PacienteFormData) => void
-  eliminarPaciente: (id: string) => void
+  recargarDatos: () => Promise<void>
+  agregarPaciente: (data: PacienteFormData) => Promise<Paciente>
+  actualizarPaciente: (id: string, data: PacienteFormData) => Promise<void>
+  eliminarPaciente: (id: string) => Promise<void>
   obtenerPaciente: (id: string) => Paciente | undefined
-  agregarResultadoPrueba: (data: ResultadoPruebaFormData) => void
-  actualizarResultadoPrueba: (id: string, data: ResultadoPruebaFormData) => void
-  eliminarResultadoPrueba: (id: string) => void
-  agregarResultadoLaboratorio: (data: ResultadoLaboratorioFormData) => void
-  actualizarResultadoLaboratorio: (id: string, data: ResultadoLaboratorioFormData) => void
-  eliminarResultadoLaboratorio: (id: string) => void
+  agregarResultadoPrueba: (data: ResultadoPruebaFormData, archivo?: File | null) => Promise<void>
+  actualizarResultadoPrueba: (
+    id: string,
+    data: ResultadoPruebaFormData,
+    archivo?: File | null,
+  ) => Promise<void>
+  eliminarResultadoPrueba: (id: string) => Promise<void>
+  agregarResultadoLaboratorio: (
+    data: ResultadoLaboratorioFormData,
+    archivo?: File | null,
+  ) => Promise<void>
+  actualizarResultadoLaboratorio: (
+    id: string,
+    data: ResultadoLaboratorioFormData,
+    archivo?: File | null,
+  ) => Promise<void>
+  eliminarResultadoLaboratorio: (id: string) => Promise<void>
   obtenerPruebasPaciente: (pacienteId: string) => ResultadoPrueba[]
   obtenerLaboratoriosPaciente: (pacienteId: string) => ResultadoLaboratorio[]
-  agregarCita: (data: CitaFormData) => void
-  actualizarCita: (id: string, data: CitaFormData) => void
-  eliminarCita: (id: string) => void
+  agregarCita: (data: CitaFormData) => Promise<void>
+  actualizarCita: (id: string, data: CitaFormData) => Promise<void>
+  eliminarCita: (id: string) => Promise<void>
   obtenerCitasPaciente: (pacienteId: string) => Cita[]
 }
 
 const ExpedienteContext = createContext<ExpedienteContextType | null>(null)
 
 export function ExpedienteProvider({ children }: { children: ReactNode }) {
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
   const [pacientes, setPacientes] = useState<Paciente[]>([])
   const [resultadosPruebas, setResultadosPruebas] = useState<ResultadoPrueba[]>([])
   const [resultadosLaboratorio, setResultadosLaboratorio] = useState<ResultadoLaboratorio[]>([])
   const [citas, setCitas] = useState<Cita[]>([])
 
-  useEffect(() => {
-    const data = loadData()
-    setPacientes(data.pacientes)
-    setResultadosPruebas(data.resultadosPruebas)
-    setResultadosLaboratorio(data.resultadosLaboratorio)
-    setCitas(data.citas)
+  const loadExpediente = useCallback(async () => {
+    setLoading(true)
+
+    try {
+      const data = await fetchExpedienteData()
+      setPacientes(data.pacientes)
+      setResultadosPruebas(data.resultadosPruebas)
+      setResultadosLaboratorio(data.resultadosLaboratorio)
+      setCitas(data.citas)
+      setError('')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No fue posible cargar el expediente.')
+    } finally {
+      setLoading(false)
+    }
   }, [])
 
   useEffect(() => {
-    saveData({ pacientes, resultadosPruebas, resultadosLaboratorio, citas })
-  }, [pacientes, resultadosPruebas, resultadosLaboratorio, citas])
+    void loadExpediente()
+  }, [loadExpediente])
 
-  const agregarPaciente = (data: PacienteFormData): Paciente => {
-    const nuevo: Paciente = {
-      ...data,
-      id: generateId(),
-      fechaRegistro: new Date().toISOString(),
-    }
-    setPacientes(prev => [...prev, nuevo])
-    return nuevo
+  const runMutation = useCallback(
+    async <T,>(action: () => Promise<T>) => {
+      try {
+        const result = await action()
+        setError('')
+        await loadExpediente()
+        return result
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'No fue posible guardar los cambios.'
+        setError(message)
+        throw err
+      }
+    },
+    [loadExpediente],
+  )
+
+  const agregarPaciente = (data: PacienteFormData) => runMutation(() => createPacienteRequest(data))
+
+  const actualizarPaciente = async (id: string, data: PacienteFormData) => {
+    await runMutation(() => updatePacienteRequest(id, data))
   }
 
-  const actualizarPaciente = (id: string, data: PacienteFormData) => {
-    setPacientes(prev => prev.map(p => (p.id === id ? { ...p, ...data } : p)))
-  }
-
-  const eliminarPaciente = (id: string) => {
-    setPacientes(prev => prev.filter(p => p.id !== id))
-    setResultadosPruebas(prev => prev.filter(r => r.pacienteId !== id))
-    setResultadosLaboratorio(prev => prev.filter(r => r.pacienteId !== id))
-    setCitas(prev => prev.filter(c => c.pacienteId !== id))
+  const eliminarPaciente = async (id: string) => {
+    await runMutation(async () => {
+      await deletePacienteRequest(id)
+      return true
+    })
   }
 
   const obtenerPaciente = (id: string) => pacientes.find(p => p.id === id)
 
-  const agregarResultadoPrueba = (data: ResultadoPruebaFormData) => {
-    setResultadosPruebas(prev => [...prev, { ...data, id: generateId() }])
+  const agregarResultadoPrueba = async (data: ResultadoPruebaFormData, archivo?: File | null) => {
+    await runMutation(() => createResultadoPruebaRequest(data, archivo))
   }
 
-  const actualizarResultadoPrueba = (id: string, data: ResultadoPruebaFormData) => {
-    setResultadosPruebas(prev => prev.map(r => (r.id === id ? { ...r, ...data } : r)))
+  const actualizarResultadoPrueba = async (
+    id: string,
+    data: ResultadoPruebaFormData,
+    archivo?: File | null,
+  ) => {
+    await runMutation(() => updateResultadoPruebaRequest(id, data, archivo))
   }
 
-  const eliminarResultadoPrueba = (id: string) => {
-    setResultadosPruebas(prev => prev.filter(r => r.id !== id))
+  const eliminarResultadoPrueba = async (id: string) => {
+    await runMutation(async () => {
+      await deleteResultadoPruebaRequest(id)
+      return true
+    })
   }
 
-  const agregarResultadoLaboratorio = (data: ResultadoLaboratorioFormData) => {
-    setResultadosLaboratorio(prev => [...prev, { ...data, id: generateId() }])
+  const agregarResultadoLaboratorio = async (
+    data: ResultadoLaboratorioFormData,
+    archivo?: File | null,
+  ) => {
+    await runMutation(() => createResultadoLaboratorioRequest(data, archivo))
   }
 
-  const actualizarResultadoLaboratorio = (id: string, data: ResultadoLaboratorioFormData) => {
-    setResultadosLaboratorio(prev => prev.map(r => (r.id === id ? { ...r, ...data } : r)))
+  const actualizarResultadoLaboratorio = async (
+    id: string,
+    data: ResultadoLaboratorioFormData,
+    archivo?: File | null,
+  ) => {
+    await runMutation(() => updateResultadoLaboratorioRequest(id, data, archivo))
   }
 
-  const eliminarResultadoLaboratorio = (id: string) => {
-    setResultadosLaboratorio(prev => prev.filter(r => r.id !== id))
+  const eliminarResultadoLaboratorio = async (id: string) => {
+    await runMutation(async () => {
+      await deleteResultadoLaboratorioRequest(id)
+      return true
+    })
   }
 
   const obtenerPruebasPaciente = (pacienteId: string) =>
@@ -107,22 +171,19 @@ export function ExpedienteProvider({ children }: { children: ReactNode }) {
   const obtenerLaboratoriosPaciente = (pacienteId: string) =>
     resultadosLaboratorio.filter(r => r.pacienteId === pacienteId)
 
-  const agregarCita = (data: CitaFormData) => {
-    setCitas(prev =>
-      [...prev, { ...data, id: generateId() }].sort((a, b) => a.fechaHora.localeCompare(b.fechaHora)),
-    )
+  const agregarCita = async (data: CitaFormData) => {
+    await runMutation(() => createCitaRequest(data))
   }
 
-  const actualizarCita = (id: string, data: CitaFormData) => {
-    setCitas(prev =>
-      prev
-        .map(cita => (cita.id === id ? { ...cita, ...data } : cita))
-        .sort((a, b) => a.fechaHora.localeCompare(b.fechaHora)),
-    )
+  const actualizarCita = async (id: string, data: CitaFormData) => {
+    await runMutation(() => updateCitaRequest(id, data))
   }
 
-  const eliminarCita = (id: string) => {
-    setCitas(prev => prev.filter(cita => cita.id !== id))
+  const eliminarCita = async (id: string) => {
+    await runMutation(async () => {
+      await deleteCitaRequest(id)
+      return true
+    })
   }
 
   const obtenerCitasPaciente = (pacienteId: string) =>
@@ -133,10 +194,13 @@ export function ExpedienteProvider({ children }: { children: ReactNode }) {
   return (
     <ExpedienteContext.Provider
       value={{
+        loading,
+        error,
         pacientes,
         resultadosPruebas,
         resultadosLaboratorio,
         citas,
+        recargarDatos: loadExpediente,
         agregarPaciente,
         actualizarPaciente,
         eliminarPaciente,

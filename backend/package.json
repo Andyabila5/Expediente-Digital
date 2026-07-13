@@ -12,6 +12,8 @@
     "dotenv": "^17.2.1",
     "expediente-digital": "file:..",
     "express": "^5.1.0",
-    "googleapis": "^153.0.0"
+    "googleapis": "^153.0.0",
+    "multer": "^2.0.2",
+    "pg": "^8.16.3"
   }
 }

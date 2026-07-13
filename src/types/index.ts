@@ -33,6 +33,7 @@ export interface ResultadoPrueba {
   fecha: string
   resultado: string
   notas: string
+  archivo: ArchivoAdjunto | null
 }
 
 export interface ResultadoLaboratorio {
@@ -42,6 +43,7 @@ export interface ResultadoLaboratorio {
   fecha: string
   valores: string
   notas: string
+  archivo: ArchivoAdjunto | null
 }
 
 export type EstadoCita = 'programada' | 'confirmada' | 'completada' | 'cancelada'
@@ -63,11 +65,18 @@ export interface ExpedienteData {
   citas: Cita[]
 }
 
+export interface ArchivoAdjunto {
+  nombre: string
+  mimeType: string
+  tamano: number
+  url: string
+}
+
 export type PacienteFormData = Omit<Paciente, 'id' | 'fechaRegistro'>
 
-export type ResultadoPruebaFormData = Omit<ResultadoPrueba, 'id'>
+export type ResultadoPruebaFormData = Omit<ResultadoPrueba, 'id' | 'archivo'>
 
-export type ResultadoLaboratorioFormData = Omit<ResultadoLaboratorio, 'id'>
+export type ResultadoLaboratorioFormData = Omit<ResultadoLaboratorio, 'id' | 'archivo'>
 
 export type CitaFormData = Omit<Cita, 'id'>
 
