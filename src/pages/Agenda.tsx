@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useExpediente } from '../context/ExpedienteContext'
+import { API_BASE_URL } from '../config'
 import type { CitaFormData, EstadoCita } from '../types'
 import './Agenda.css'
 
@@ -82,9 +83,9 @@ export default function Agenda() {
   const loadIntegrationStatus = useCallback(async () => {
     try {
       const [healthResponse, whatsappResponse, googleResponse] = await Promise.all([
-        fetch('/api/health'),
-        fetch('/api/whatsapp/status'),
-        fetch('/api/google/status'),
+        fetch(`${API_BASE_URL}/api/health`),
+        fetch(`${API_BASE_URL}/api/whatsapp/status`),
+        fetch(`${API_BASE_URL}/api/google/status`),
       ])
 
       if (!healthResponse.ok || !whatsappResponse.ok || !googleResponse.ok) {
@@ -123,7 +124,7 @@ export default function Agenda() {
       setBackendOnline(false)
       setWhatsAppStatus(null)
       setGoogleStatus(null)
-      setStatusMessage('El backend local no está respondiendo. Ejecuta: npm run backend:dev')
+      setStatusMessage('El backend no está respondiendo. Verifica que el servicio en Render esté activo.')
       setGoogleMessage('No fue posible leer el estado de Google Calendar.')
     }
   }, [])
@@ -172,7 +173,7 @@ export default function Agenda() {
     setStatusMessage('Enviando mensaje de prueba por WhatsApp...')
 
     try {
-      const response = await fetch('/api/whatsapp/messages/test', {
+      const response = await fetch(`${API_BASE_URL}/api/whatsapp/messages/test`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -210,7 +211,7 @@ export default function Agenda() {
     setStatusMessage(`Enviando recordatorio a ${paciente.nombre}...`)
 
     try {
-      const response = await fetch('/api/whatsapp/messages/reminder', {
+      const response = await fetch(`${API_BASE_URL}/api/whatsapp/messages/reminder`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -242,7 +243,7 @@ export default function Agenda() {
     setGoogleMessage('Preparando autenticación de Google Calendar...')
 
     try {
-      const response = await fetch('/api/google/auth-url')
+      const response = await fetch(`${API_BASE_URL}/api/google/auth-url`)
       const data = await response.json()
 
       if (!response.ok || !data?.url) {
@@ -274,7 +275,7 @@ export default function Agenda() {
     setGoogleMessage(`Creando evento de Google Calendar para ${paciente.nombre}...`)
 
     try {
-      const response = await fetch('/api/google/calendar/events', {
+      const response = await fetch(`${API_BASE_URL}/api/google/calendar/events`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -413,7 +414,7 @@ export default function Agenda() {
         <div className="whatsapp-panel-header">
           <div>
             <h3>WhatsApp</h3>
-            <p className="page-subtitle">Envía mensajes de prueba y recordatorios desde el backend local.</p>
+            <p className="page-subtitle">Envía mensajes de prueba y recordatorios desde el backend.</p>
           </div>
           <span className={`integration-badge ${backendOnline ? 'online' : 'offline'}`}>
             {backendOnline ? 'Backend activo' : 'Backend desconectado'}
@@ -491,9 +492,8 @@ export default function Agenda() {
         </div>
 
         <p
-          className={`whatsapp-feedback ${
-            googleStatus?.authenticated ? 'success' : googleStatus?.configured ? 'warning' : 'error'
-          }`}
+          className={`whatsapp-feedback ${googleStatus?.authenticated ? 'success' : googleStatus?.configured ? 'warning' : 'error'
+            }`}
         >
           {googleMessage}
         </p>
@@ -711,8 +711,8 @@ export default function Agenda() {
       )}
 
       <div className="agenda-note">
-        Si el backend está corriendo y `backend/.env` tiene las credenciales correctas, ya puedes disparar
-        mensajes de WhatsApp y eventos de Google Calendar desde esta pantalla.
+        Si el backend está activo y las variables de entorno en Render tienen las credenciales correctas, ya
+        puedes disparar mensajes de WhatsApp y eventos de Google Calendar desde esta pantalla.
       </div>
 
       <div className="agenda-note">

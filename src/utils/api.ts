@@ -1,3 +1,4 @@
+export const API_BASE_URL = import.meta.env.VITE_API_URL || ''
 import type {
   Cita,
   CitaFormData,
@@ -22,7 +23,7 @@ async function parseJson(response: Response) {
 }
 
 async function apiRequest<T>(url: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(url, init)
+  const response = await fetch(`${API_BASE_URL}${url}`, init)
   const data = await parseJson(response)
 
   if (!response.ok) {

@@ -5,6 +5,7 @@ import { generarExpedientePDF } from '../utils/pdfGenerator'
 import PacienteFormFields from '../components/PacienteFormFields'
 import PacienteExpedienteView from '../components/PacienteExpedienteView'
 import { pacienteToFormData } from '../constants/pacienteForm'
+import { API_BASE_URL } from '../config'
 import type { PacienteFormData } from '../types'
 import './PacienteDetalle.css'
 
@@ -161,7 +162,7 @@ export default function PacienteDetalle() {
                   <p>{p.resultado}</p>
                   {p.archivo && (
                     <p>
-                      <a href={p.archivo.url} target="_blank" rel="noreferrer">
+                      <a href={`${API_BASE_URL}${p.archivo.url}`} target="_blank" rel="noreferrer">
                         Abrir adjunto: {p.archivo.nombre}
                       </a>
                     </p>
@@ -190,7 +191,7 @@ export default function PacienteDetalle() {
                   <p>{l.valores}</p>
                   {l.archivo && (
                     <p>
-                      <a href={l.archivo.url} target="_blank" rel="noreferrer">
+                      <a href={`${API_BASE_URL}${l.archivo.url}`} target="_blank" rel="noreferrer">
                         Abrir adjunto: {l.archivo.nombre}
                       </a>
                     </p>

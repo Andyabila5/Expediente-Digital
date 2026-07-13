@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useExpediente } from '../context/ExpedienteContext'
+import { API_BASE_URL } from '../config'
 import type { ResultadoPrueba, ResultadoPruebaFormData } from '../types'
 import './Resultados.css'
 
@@ -242,7 +243,7 @@ export default function ResultadosPruebas() {
                   <td className="resultado-cell">{r.resultado}</td>
                   <td>
                     {r.archivo ? (
-                      <a className="archivo-link" href={r.archivo.url} target="_blank" rel="noreferrer">
+                      <a className="archivo-link" href={`${API_BASE_URL}${r.archivo.url}`} target="_blank" rel="noreferrer">
                         {r.archivo.nombre}
                       </a>
                     ) : (
