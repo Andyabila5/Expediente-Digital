@@ -1,7 +1,9 @@
 import pg from 'pg'
 import { env, ensureConfigured } from '../config/env.js'
 
-const { Pool } = pg
+const { Pool, types } = pg
+types.setTypeParser(1114, (value) => `${value.replace(' ', 'T')}Z`)
+types.setTypeParser(1184, (value) => new Date(value).toISOString())
 
 ensureConfigured(
   [env.database.url],

@@ -53,6 +53,24 @@ function addMinutes(isoDateTime: string, minutes: number) {
   return date.toISOString()
 }
 
+// Convierte un ISO UTC (lo que devuelve el backend) al formato que espera
+// <input type="datetime-local">, que siempre se interpreta en hora LOCAL
+// del navegador.
+function toDatetimeLocalValue(isoString: string) {
+  if (!isoString) return ''
+  const date = new Date(isoString)
+  const offsetMs = date.getTimezoneOffset() * 60000
+  const local = new Date(date.getTime() - offsetMs)
+  return local.toISOString().slice(0, 16)
+}
+
+// Convierte el valor local del input (sin zona horaria) a un ISO UTC
+// inequívoco antes de mandarlo al backend.
+function fromDatetimeLocalValue(localValue: string) {
+  if (!localValue) return ''
+  return new Date(localValue).toISOString()
+}
+
 export default function Agenda() {
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
@@ -317,10 +335,15 @@ export default function Agenda() {
     setSavingAppointment(true)
 
     try {
+      const payload = {
+        ...form,
+        fechaHora: fromDatetimeLocalValue(form.fechaHora),
+      }
+
       if (editingId) {
-        await actualizarCita(editingId, form)
+        await actualizarCita(editingId, payload)
       } else {
-        await agregarCita(form)
+        await agregarCita(payload)
       }
 
       resetForm()
@@ -335,7 +358,7 @@ export default function Agenda() {
     setEditingId(id)
     setForm({
       pacienteId: cita.pacienteId,
-      fechaHora: cita.fechaHora.slice(0, 16),
+      fechaHora: toDatetimeLocalValue(cita.fechaHora),
       motivo: cita.motivo,
       notas: cita.notas,
       estado: cita.estado,
