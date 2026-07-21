@@ -67,7 +67,7 @@ function drawFullLine(doc: jsPDF, text: string, y: number, indent = 0): number {
 function drawSectionLabel(doc: jsPDF, label: string, y: number): number {
   doc.setFontSize(9)
   doc.setFont('helvetica', 'bold')
-  doc.setTextColor(30, 64, 175)
+  doc.setTextColor(0, 0, 0)
   doc.text(label, MARGIN, y)
   return y + LH + 1
 }
