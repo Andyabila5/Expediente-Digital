@@ -153,11 +153,11 @@ export function generarExpedientePDF({ paciente, pruebas, laboratorios }: Expedi
 
   drawHeaderLogo(doc)
 
-  doc.setFontSize(13)
+  doc.setFontSize(17)
   doc.setFont('helvetica', 'bold')
-  doc.setTextColor(30, 64, 175)
+  doc.setTextColor(0, 0, 0)
   doc.text('EXPEDIENTE CLINICO', PAGE_W / 2, y, { align: 'center' })
-  y += 5
+  y += 6
 
   doc.setFontSize(7.5)
   doc.setFont('helvetica', 'normal')
