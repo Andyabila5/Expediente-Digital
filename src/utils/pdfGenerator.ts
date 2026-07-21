@@ -2,6 +2,7 @@ import jsPDF from 'jspdf'
 import type { Paciente, ResultadoPrueba, ResultadoLaboratorio } from '../types'
 import { DOCTOR_INFO } from '../constants/doctor'
 import { formatFecha } from './storage'
+import { LOGO_BASE64 } from '../assets/logoBase64'
 
 interface ExpedientePDF {
   paciente: Paciente
@@ -20,6 +21,7 @@ const FOOTER_H = 28
 const PAGE_BOTTOM = PAGE_H - MARGIN - FOOTER_H
 const FONT = 8.5
 const LH = 4.2
+const LOGO_SIZE = 18
 
 function val(value: string): string {
   return value?.trim() ? value.trim() : '-'
@@ -68,6 +70,14 @@ function drawSectionLabel(doc: jsPDF, label: string, y: number): number {
   doc.setTextColor(30, 64, 175)
   doc.text(label, MARGIN, y)
   return y + LH + 1
+}
+
+function drawHeaderLogo(doc: jsPDF): void {
+  try {
+    doc.addImage(LOGO_BASE64, 'JPEG', PAGE_W - MARGIN - LOGO_SIZE, MARGIN - 6, LOGO_SIZE, LOGO_SIZE)
+  } catch {
+    // Si la imagen no se puede incrustar por alguna razón, seguimos sin bloquear la generación del PDF.
+  }
 }
 
 function drawDoctorFooter(doc: jsPDF, y: number, pinToBottom = false): void {
@@ -140,6 +150,8 @@ function renderExtraResults(
 export function generarExpedientePDF({ paciente, pruebas, laboratorios }: ExpedientePDF): void {
   const doc = new jsPDF()
   let y = MARGIN + 2
+
+  drawHeaderLogo(doc)
 
   doc.setFontSize(13)
   doc.setFont('helvetica', 'bold')
