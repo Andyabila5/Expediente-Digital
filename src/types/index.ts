@@ -55,7 +55,6 @@ export interface Cita {
   motivo: string
   notas: string
   estado: EstadoCita
-  recordatorioWhatsApp: boolean
 }
 
 export interface ExpedienteData {

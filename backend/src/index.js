@@ -27,11 +27,6 @@ import {
   updateResultadoLaboratorio,
   updateResultadoPrueba,
 } from './services/expedienteService.js'
-import {
-  getWhatsAppStatus,
-  sendAppointmentReminder,
-  sendHelloWorldTest,
-} from './services/whatsappService.js'
 
 const app = express()
 const upload = multer({
@@ -273,32 +268,6 @@ app.post('/api/google/calendar/events', async (request, response, next) => {
   try {
     const event = await createCalendarEvent(request.body)
     response.status(201).json(event)
-  } catch (error) {
-    next(error)
-  }
-})
-
-app.get('/api/whatsapp/status', async (_request, response, next) => {
-  try {
-    response.json(await getWhatsAppStatus())
-  } catch (error) {
-    next(error)
-  }
-})
-
-app.post('/api/whatsapp/messages/test', async (request, response, next) => {
-  try {
-    const data = await sendHelloWorldTest(request.body)
-    response.status(201).json(data)
-  } catch (error) {
-    next(error)
-  }
-})
-
-app.post('/api/whatsapp/messages/reminder', async (request, response, next) => {
-  try {
-    const data = await sendAppointmentReminder(request.body)
-    response.status(201).json(data)
   } catch (error) {
     next(error)
   }

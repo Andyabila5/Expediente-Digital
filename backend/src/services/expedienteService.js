@@ -65,8 +65,7 @@ const CITA_SELECT = `
     fecha_hora,
     motivo,
     notas,
-    estado,
-    recordatorio_whatsapp
+    estado
   from citas
 `
 
@@ -170,10 +169,6 @@ function normalizeCita(data = {}) {
     motivo: asText(data.motivo).trim(),
     notas: asText(data.notas).trim(),
     estado: asText(data.estado).trim() || 'programada',
-    recordatorioWhatsApp:
-      typeof data.recordatorioWhatsApp === 'boolean'
-        ? data.recordatorioWhatsApp
-        : ['true', '1', 'on', 'yes'].includes(asText(data.recordatorioWhatsApp).toLowerCase()),
   }
 
   if (!cita.pacienteId || !cita.fechaHora || !cita.motivo) {
@@ -258,7 +253,6 @@ function mapCita(row) {
     motivo: row.motivo,
     notas: row.notas ?? '',
     estado: row.estado,
-    recordatorioWhatsApp: Boolean(row.recordatorio_whatsapp),
   }
 }
 
@@ -618,11 +612,11 @@ export async function createCita(data) {
   const cita = normalizeCita(data)
   const result = await pool.query(
     `
-      insert into citas (paciente_id, fecha_hora, motivo, notas, estado, recordatorio_whatsapp)
-      values ($1, $2, $3, $4, $5, $6)
+      insert into citas (paciente_id, fecha_hora, motivo, notas, estado)
+      values ($1, $2, $3, $4, $5)
       returning *
     `,
-    [cita.pacienteId, cita.fechaHora, cita.motivo, cita.notas, cita.estado, cita.recordatorioWhatsApp],
+    [cita.pacienteId, cita.fechaHora, cita.motivo, cita.notas, cita.estado],
   )
 
   return mapCita(result.rows[0])
@@ -639,12 +633,11 @@ export async function updateCita(id, data) {
         motivo = $4,
         notas = $5,
         estado = $6,
-        recordatorio_whatsapp = $7,
         updated_at = now()
       where id = $1
       returning *
     `,
-    [id, cita.pacienteId, cita.fechaHora, cita.motivo, cita.notas, cita.estado, cita.recordatorioWhatsApp],
+    [id, cita.pacienteId, cita.fechaHora, cita.motivo, cita.notas, cita.estado],
   )
 
   if (result.rowCount === 0) {
