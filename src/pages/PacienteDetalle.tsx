@@ -134,10 +134,7 @@ export default function PacienteDetalle() {
                 <li key={cita.id}>
                   <strong>{cita.motivo}</strong>
                   <span>{new Date(cita.fechaHora).toLocaleString('es-MX')}</span>
-                  <p>
-                    Estado: {cita.estado}
-                    {cita.recordatorioWhatsApp ? ' · Recordatorio por WhatsApp pendiente' : ''}
-                  </p>
+                  <p>Estado: {cita.estado}</p>
                 </li>
               ))}
             </ul>
