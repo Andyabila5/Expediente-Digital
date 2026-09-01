@@ -6,6 +6,8 @@ import type {
   ResultadoPruebaFormData,
   ResultadoLaboratorio,
   ResultadoLaboratorioFormData,
+  SolicitudAnalisis,
+  SolicitudAnalisisFormData,
   Cita,
   CitaFormData,
 } from '../types'
@@ -14,15 +16,18 @@ import {
   createPaciente as createPacienteRequest,
   createResultadoLaboratorio as createResultadoLaboratorioRequest,
   createResultadoPrueba as createResultadoPruebaRequest,
+  createSolicitudAnalisis as createSolicitudAnalisisRequest,
   deleteCita as deleteCitaRequest,
   deletePaciente as deletePacienteRequest,
   deleteResultadoLaboratorio as deleteResultadoLaboratorioRequest,
   deleteResultadoPrueba as deleteResultadoPruebaRequest,
+  deleteSolicitudAnalisis as deleteSolicitudAnalisisRequest,
   fetchExpedienteData,
   updateCita as updateCitaRequest,
   updatePaciente as updatePacienteRequest,
   updateResultadoLaboratorio as updateResultadoLaboratorioRequest,
   updateResultadoPrueba as updateResultadoPruebaRequest,
+  updateSolicitudAnalisis as updateSolicitudAnalisisRequest,
 } from '../utils/api'
 
 interface ExpedienteContextType {
@@ -31,6 +36,7 @@ interface ExpedienteContextType {
   pacientes: Paciente[]
   resultadosPruebas: ResultadoPrueba[]
   resultadosLaboratorio: ResultadoLaboratorio[]
+  solicitudesAnalisis: SolicitudAnalisis[]
   citas: Cita[]
   recargarDatos: () => Promise<void>
   agregarPaciente: (data: PacienteFormData) => Promise<Paciente>
@@ -56,6 +62,10 @@ interface ExpedienteContextType {
   eliminarResultadoLaboratorio: (id: string) => Promise<void>
   obtenerPruebasPaciente: (pacienteId: string) => ResultadoPrueba[]
   obtenerLaboratoriosPaciente: (pacienteId: string) => ResultadoLaboratorio[]
+  agregarSolicitudAnalisis: (data: SolicitudAnalisisFormData) => Promise<void>
+  actualizarSolicitudAnalisis: (id: string, data: SolicitudAnalisisFormData) => Promise<void>
+  eliminarSolicitudAnalisis: (id: string) => Promise<void>
+  obtenerSolicitudesAnalisisPaciente: (pacienteId: string) => SolicitudAnalisis[]
   agregarCita: (data: CitaFormData) => Promise<void>
   actualizarCita: (id: string, data: CitaFormData) => Promise<void>
   eliminarCita: (id: string) => Promise<void>
@@ -70,6 +80,7 @@ export function ExpedienteProvider({ children }: { children: ReactNode }) {
   const [pacientes, setPacientes] = useState<Paciente[]>([])
   const [resultadosPruebas, setResultadosPruebas] = useState<ResultadoPrueba[]>([])
   const [resultadosLaboratorio, setResultadosLaboratorio] = useState<ResultadoLaboratorio[]>([])
+  const [solicitudesAnalisis, setSolicitudesAnalisis] = useState<SolicitudAnalisis[]>([])
   const [citas, setCitas] = useState<Cita[]>([])
 
   const loadExpediente = useCallback(async () => {
@@ -80,6 +91,7 @@ export function ExpedienteProvider({ children }: { children: ReactNode }) {
       setPacientes(data.pacientes)
       setResultadosPruebas(data.resultadosPruebas)
       setResultadosLaboratorio(data.resultadosLaboratorio)
+      setSolicitudesAnalisis(data.solicitudesAnalisis)
       setCitas(data.citas)
       setError('')
     } catch (err) {
@@ -171,6 +183,26 @@ export function ExpedienteProvider({ children }: { children: ReactNode }) {
   const obtenerLaboratoriosPaciente = (pacienteId: string) =>
     resultadosLaboratorio.filter(r => r.pacienteId === pacienteId)
 
+  const agregarSolicitudAnalisis = async (data: SolicitudAnalisisFormData) => {
+    await runMutation(() => createSolicitudAnalisisRequest(data))
+  }
+
+  const actualizarSolicitudAnalisis = async (id: string, data: SolicitudAnalisisFormData) => {
+    await runMutation(() => updateSolicitudAnalisisRequest(id, data))
+  }
+
+  const eliminarSolicitudAnalisis = async (id: string) => {
+    await runMutation(async () => {
+      await deleteSolicitudAnalisisRequest(id)
+      return true
+    })
+  }
+
+  const obtenerSolicitudesAnalisisPaciente = (pacienteId: string) =>
+    solicitudesAnalisis
+      .filter(solicitud => solicitud.pacienteId === pacienteId)
+      .sort((a, b) => b.fecha.localeCompare(a.fecha) || b.createdAt.localeCompare(a.createdAt))
+
   const agregarCita = async (data: CitaFormData) => {
     await runMutation(() => createCitaRequest(data))
   }
@@ -199,6 +231,7 @@ export function ExpedienteProvider({ children }: { children: ReactNode }) {
         pacientes,
         resultadosPruebas,
         resultadosLaboratorio,
+        solicitudesAnalisis,
         citas,
         recargarDatos: loadExpediente,
         agregarPaciente,
@@ -213,6 +246,10 @@ export function ExpedienteProvider({ children }: { children: ReactNode }) {
         eliminarResultadoLaboratorio,
         obtenerPruebasPaciente,
         obtenerLaboratoriosPaciente,
+        agregarSolicitudAnalisis,
+        actualizarSolicitudAnalisis,
+        eliminarSolicitudAnalisis,
+        obtenerSolicitudesAnalisisPaciente,
         agregarCita,
         actualizarCita,
         eliminarCita,

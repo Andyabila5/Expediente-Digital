@@ -11,7 +11,6 @@ const EMPTY_CITA_FORM: CitaFormData = {
   motivo: '',
   notas: '',
   estado: 'programada',
-  recordatorioWhatsApp: true,
 }
 
 const ESTADOS: { value: EstadoCita; label: string }[] = [
@@ -28,18 +27,6 @@ function formatFechaHora(value: string) {
   })
 }
 
-interface WhatsAppStatus {
-  configured: boolean
-  hasTestRecipient: boolean
-  testRecipient: string | null
-  testTemplate: string
-  phoneNumberId: string | null
-  businessAccountId: string | null
-  tokenValid: boolean | null
-  displayPhoneNumber: string | null
-  verifiedName: string | null
-}
-
 interface GoogleStatus {
   configured: boolean
   authenticated: boolean
@@ -53,9 +40,6 @@ function addMinutes(isoDateTime: string, minutes: number) {
   return date.toISOString()
 }
 
-// Convierte un ISO UTC (lo que devuelve el backend) al formato que espera
-// <input type="datetime-local">, que siempre se interpreta en hora LOCAL
-// del navegador.
 function toDatetimeLocalValue(isoString: string) {
   if (!isoString) return ''
   const date = new Date(isoString)
@@ -64,8 +48,6 @@ function toDatetimeLocalValue(isoString: string) {
   return local.toISOString().slice(0, 16)
 }
 
-// Convierte el valor local del input (sin zona horaria) a un ISO UTC
-// inequívoco antes de mandarlo al backend.
 function fromDatetimeLocalValue(localValue: string) {
   if (!localValue) return ''
   return new Date(localValue).toISOString()
@@ -81,15 +63,10 @@ export default function Agenda() {
   const [estadoFiltro, setEstadoFiltro] = useState<'todas' | EstadoCita>('todas')
   const [form, setForm] = useState<CitaFormData>(EMPTY_CITA_FORM)
   const [backendOnline, setBackendOnline] = useState(false)
-  const [whatsAppStatus, setWhatsAppStatus] = useState<WhatsAppStatus | null>(null)
   const [googleStatus, setGoogleStatus] = useState<GoogleStatus | null>(null)
-  const [statusMessage, setStatusMessage] = useState('')
   const [googleMessage, setGoogleMessage] = useState('')
-  const [sendingTest, setSendingTest] = useState(false)
-  const [sendingReminderId, setSendingReminderId] = useState<string | null>(null)
   const [creatingGoogleEventId, setCreatingGoogleEventId] = useState<string | null>(null)
   const [openingGoogleAuth, setOpeningGoogleAuth] = useState(false)
-  const [testPhone, setTestPhone] = useState('')
   const [savingAppointment, setSavingAppointment] = useState(false)
   const [deletingAppointmentId, setDeletingAppointmentId] = useState<string | null>(null)
 
@@ -100,37 +77,19 @@ export default function Agenda() {
 
   const loadIntegrationStatus = useCallback(async () => {
     try {
-      const [healthResponse, whatsappResponse, googleResponse] = await Promise.all([
+      const [healthResponse, googleResponse] = await Promise.all([
         fetch(`${API_BASE_URL}/api/health`),
-        fetch(`${API_BASE_URL}/api/whatsapp/status`),
         fetch(`${API_BASE_URL}/api/google/status`),
       ])
 
-      if (!healthResponse.ok || !whatsappResponse.ok || !googleResponse.ok) {
+      if (!healthResponse.ok || !googleResponse.ok) {
         throw new Error('No fue posible leer el estado del backend.')
       }
 
-      const whatsappData = (await whatsappResponse.json()) as WhatsAppStatus
       const googleData = (await googleResponse.json()) as GoogleStatus
 
       setBackendOnline(true)
-      setWhatsAppStatus(whatsappData)
       setGoogleStatus(googleData)
-
-      if (whatsappData.testRecipient) {
-        setTestPhone(current => current || (whatsappData.testRecipient ?? ''))
-      }
-
-      if (!whatsappData.configured) {
-        setStatusMessage('El backend está activo, pero faltan credenciales de WhatsApp en backend/.env.')
-      } else if (whatsappData.tokenValid === false) {
-        setStatusMessage('WhatsApp está configurado, pero el token parece inválido o expirado.')
-      } else {
-        setStatusMessage(
-          `WhatsApp listo. La prueba envía el template "${whatsappData.testTemplate}" al número destino.`,
-        )
-      }
-
       setGoogleMessage(
         googleData.configured
           ? googleData.authenticated
@@ -140,9 +99,7 @@ export default function Agenda() {
       )
     } catch {
       setBackendOnline(false)
-      setWhatsAppStatus(null)
       setGoogleStatus(null)
-      setStatusMessage('El backend no está respondiendo. Verifica que el servicio en Render esté activo.')
       setGoogleMessage('No fue posible leer el estado de Google Calendar.')
     }
   }, [])
@@ -170,90 +127,12 @@ export default function Agenda() {
   const resumen = {
     total: citas.length,
     pendientes: citas.filter(cita => ['programada', 'confirmada'].includes(cita.estado)).length,
-    conRecordatorio: citas.filter(cita => cita.recordatorioWhatsApp).length,
   }
 
   const resetForm = () => {
     setForm(EMPTY_CITA_FORM)
     setEditingId(null)
     setShowForm(false)
-  }
-
-  const handleSendTestMessage = async (event: React.FormEvent) => {
-    event.preventDefault()
-
-    if (!testPhone.trim()) {
-      setStatusMessage('Debes indicar un número para la prueba.')
-      return
-    }
-
-    setSendingTest(true)
-    setStatusMessage('Enviando mensaje de prueba por WhatsApp...')
-
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/whatsapp/messages/test`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          to: testPhone.trim(),
-        }),
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data?.message || 'No se pudo enviar el mensaje de prueba.')
-      }
-
-      setStatusMessage('Template hello_world enviado correctamente por WhatsApp.')
-    } catch (error) {
-      setStatusMessage(error instanceof Error ? error.message : 'Falló el envío de prueba.')
-    } finally {
-      setSendingTest(false)
-    }
-  }
-
-  const handleSendReminder = async (citaId: string) => {
-    const cita = citas.find(item => item.id === citaId)
-    if (!cita) return
-
-    const paciente = pacientesMap.get(cita.pacienteId)
-    if (!paciente?.telefono?.trim()) {
-      setStatusMessage('Ese paciente no tiene teléfono registrado para enviar WhatsApp.')
-      return
-    }
-
-    setSendingReminderId(citaId)
-    setStatusMessage(`Enviando recordatorio a ${paciente.nombre}...`)
-
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/whatsapp/messages/reminder`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          to: paciente.telefono.trim(),
-          patientName: paciente.nombre,
-          appointmentDate: formatFechaHora(cita.fechaHora),
-          clinicName: 'Expediente Digital',
-        }),
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data?.message || 'No se pudo enviar el recordatorio.')
-      }
-
-      setStatusMessage(`Recordatorio enviado correctamente a ${paciente.nombre}.`)
-    } catch (error) {
-      setStatusMessage(error instanceof Error ? error.message : 'Falló el envío del recordatorio.')
-    } finally {
-      setSendingReminderId(null)
-    }
   }
 
   const handleGoogleAuth = async () => {
@@ -362,7 +241,6 @@ export default function Agenda() {
       motivo: cita.motivo,
       notas: cita.notas,
       estado: cita.estado,
-      recordatorioWhatsApp: cita.recordatorioWhatsApp,
     })
     setShowForm(true)
   }
@@ -395,9 +273,7 @@ export default function Agenda() {
       <div className="page-header">
         <div>
           <h2>Agenda</h2>
-          <p className="page-subtitle">
-            Programa citas del expediente y deja preparado el recordatorio para WhatsApp.
-          </p>
+          <p className="page-subtitle">Programa citas del expediente y sincronízalas con Google Calendar.</p>
         </div>
         <button
           className="btn btn-primary"
@@ -427,69 +303,10 @@ export default function Agenda() {
           <span>Próximas</span>
           <strong>{resumen.pendientes}</strong>
         </div>
-        <div className="card summary-card">
-          <span>Con recordatorio</span>
-          <strong>{resumen.conRecordatorio}</strong>
-        </div>
       </div>
 
-      <section className="card whatsapp-panel">
-        <div className="whatsapp-panel-header">
-          <div>
-            <h3>WhatsApp</h3>
-            <p className="page-subtitle">Envía mensajes de prueba y recordatorios desde el backend.</p>
-          </div>
-          <span className={`integration-badge ${backendOnline ? 'online' : 'offline'}`}>
-            {backendOnline ? 'Backend activo' : 'Backend desconectado'}
-          </span>
-        </div>
-
-        <div className="whatsapp-status-grid">
-          <div className="whatsapp-status-item">
-            <span>API</span>
-            <strong>{whatsAppStatus?.configured ? 'Configurada' : 'Pendiente'}</strong>
-          </div>
-          <div className="whatsapp-status-item">
-            <span>Número de prueba</span>
-            <strong>{whatsAppStatus?.hasTestRecipient ? 'Detectado' : 'No configurado'}</strong>
-          </div>
-          <div className="whatsapp-status-item">
-            <span>Phone Number ID</span>
-            <strong>{whatsAppStatus?.phoneNumberId || 'Sin definir'}</strong>
-          </div>
-        </div>
-
-        <p className={`whatsapp-feedback ${backendOnline ? 'success' : 'error'}`}>{statusMessage}</p>
-
-        <form className="whatsapp-test-form" onSubmit={handleSendTestMessage}>
-          <div className="form-grid">
-            <div className="form-group">
-              <label htmlFor="testPhone">Número destino</label>
-              <input
-                id="testPhone"
-                type="text"
-                value={testPhone}
-                onChange={event => setTestPhone(event.target.value)}
-                placeholder="506XXXXXXXX"
-              />
-            </div>
-
-            <div className="form-group full-width">
-              <label>Prueba usada</label>
-              <input type="text" value="template: hello_world" readOnly />
-            </div>
-          </div>
-
-          <div className="form-actions agenda-form-actions">
-            <button type="submit" className="btn btn-primary" disabled={!backendOnline || sendingTest}>
-              {sendingTest ? 'Enviando...' : 'Enviar prueba hello_world'}
-            </button>
-          </div>
-        </form>
-      </section>
-
-      <section className="card whatsapp-panel">
-        <div className="whatsapp-panel-header">
+      <section className="card integration-panel">
+        <div className="integration-panel-header">
           <div>
             <h3>Google Calendar</h3>
             <p className="page-subtitle">Autentica tu cuenta y crea eventos desde cada cita.</p>
@@ -499,23 +316,23 @@ export default function Agenda() {
           </span>
         </div>
 
-        <div className="whatsapp-status-grid">
-          <div className="whatsapp-status-item">
+        <div className="integration-status-grid">
+          <div className="integration-status-item">
             <span>Credenciales</span>
             <strong>{googleStatus?.configured ? 'Configuradas' : 'Pendientes'}</strong>
           </div>
-          <div className="whatsapp-status-item">
+          <div className="integration-status-item">
             <span>Autenticación</span>
             <strong>{googleStatus?.authenticated ? 'Completa' : 'Falta iniciar sesión'}</strong>
           </div>
-          <div className="whatsapp-status-item">
+          <div className="integration-status-item">
             <span>Calendario</span>
             <strong>{googleStatus?.calendarId || 'Sin definir'}</strong>
           </div>
         </div>
 
         <p
-          className={`whatsapp-feedback ${googleStatus?.authenticated ? 'success' : googleStatus?.configured ? 'warning' : 'error'
+          className={`integration-feedback ${googleStatus?.authenticated ? 'success' : googleStatus?.configured ? 'warning' : 'error'
             }`}
         >
           {googleMessage}
@@ -601,21 +418,10 @@ export default function Agenda() {
                 rows={3}
                 value={form.notas}
                 onChange={event => setForm(prev => ({ ...prev, notas: event.target.value }))}
-                placeholder="Indicaciones previas, observaciones o mensaje base para recordatorio."
+                placeholder="Indicaciones previas u observaciones de la cita."
               />
             </div>
           </div>
-
-          <label className="agenda-checkbox">
-            <input
-              type="checkbox"
-              checked={form.recordatorioWhatsApp}
-              onChange={event =>
-                setForm(prev => ({ ...prev, recordatorioWhatsApp: event.target.checked }))
-              }
-            />
-            <span>Marcar esta cita para recordatorio por WhatsApp</span>
-          </label>
 
           <div className="form-actions agenda-form-actions">
             <button type="button" className="btn btn-secondary" onClick={resetForm}>
@@ -676,14 +482,6 @@ export default function Agenda() {
                     <p className="agenda-item-motivo">{cita.motivo}</p>
                     {cita.notas && <p className="agenda-item-notes">{cita.notas}</p>}
                   </div>
-
-                  <div className="agenda-meta">
-                    <span className={`agenda-reminder ${cita.recordatorioWhatsApp ? 'active' : ''}`}>
-                      {cita.recordatorioWhatsApp
-                        ? 'Recordatorio de WhatsApp pendiente'
-                        : 'Sin recordatorio'}
-                    </span>
-                  </div>
                 </div>
 
                 <div className="paciente-actions">
@@ -704,13 +502,6 @@ export default function Agenda() {
                     disabled={!backendOnline || !googleStatus?.authenticated || creatingGoogleEventId === cita.id}
                   >
                     {creatingGoogleEventId === cita.id ? 'Creando evento...' : 'Google Calendar'}
-                  </button>
-                  <button
-                    className="btn btn-primary btn-sm"
-                    onClick={() => void handleSendReminder(cita.id)}
-                    disabled={!backendOnline || sendingReminderId === cita.id || !cita.recordatorioWhatsApp}
-                  >
-                    {sendingReminderId === cita.id ? 'Enviando...' : 'Enviar WhatsApp'}
                   </button>
                   <button
                     className="btn btn-danger btn-sm"
@@ -734,14 +525,8 @@ export default function Agenda() {
       )}
 
       <div className="agenda-note">
-        Si el backend está activo y las variables de entorno en Render tienen las credenciales correctas, ya
-        puedes disparar mensajes de WhatsApp y eventos de Google Calendar desde esta pantalla.
-      </div>
-
-      <div className="agenda-note">
-        Si WhatsApp aceptó la solicitud pero aún no ves el mensaje en el teléfono, eso suele significar que la
-        API lo recibió pero todavía no estamos leyendo confirmaciones de entrega. Para saber si fue entregado,
-        leído o rechazado en el tramo final, el siguiente paso sería conectar un webhook de estados de Meta.
+        Si el backend está activo y las credenciales de Google Calendar están configuradas, puedes crear
+        eventos directamente desde cada cita.
       </div>
     </div>
   )

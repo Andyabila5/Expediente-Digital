@@ -15,10 +15,12 @@ import {
   createPaciente,
   createResultadoLaboratorio,
   createResultadoPrueba,
+  createSolicitudAnalisis,
   deleteCita,
   deletePaciente,
   deleteResultadoLaboratorio,
   deleteResultadoPrueba,
+  deleteSolicitudAnalisis,
   getExpedienteData,
   getResultadoLaboratorioAttachment,
   getResultadoPruebaAttachment,
@@ -26,12 +28,8 @@ import {
   updatePaciente,
   updateResultadoLaboratorio,
   updateResultadoPrueba,
+  updateSolicitudAnalisis,
 } from './services/expedienteService.js'
-import {
-  getWhatsAppStatus,
-  sendAppointmentReminder,
-  sendHelloWorldTest,
-} from './services/whatsappService.js'
 
 const app = express()
 const upload = multer({
@@ -228,6 +226,31 @@ app.delete('/api/citas/:id', async (request, response, next) => {
   }
 })
 
+app.post('/api/solicitudes-analisis', async (request, response, next) => {
+  try {
+    response.status(201).json(await createSolicitudAnalisis(request.body))
+  } catch (error) {
+    next(error)
+  }
+})
+
+app.put('/api/solicitudes-analisis/:id', async (request, response, next) => {
+  try {
+    response.json(await updateSolicitudAnalisis(request.params.id, request.body))
+  } catch (error) {
+    next(error)
+  }
+})
+
+app.delete('/api/solicitudes-analisis/:id', async (request, response, next) => {
+  try {
+    await deleteSolicitudAnalisis(request.params.id)
+    response.status(204).send()
+  } catch (error) {
+    next(error)
+  }
+})
+
 app.get('/api/google/status', async (_request, response, next) => {
   try {
     response.json(await getGoogleStatus())
@@ -273,32 +296,6 @@ app.post('/api/google/calendar/events', async (request, response, next) => {
   try {
     const event = await createCalendarEvent(request.body)
     response.status(201).json(event)
-  } catch (error) {
-    next(error)
-  }
-})
-
-app.get('/api/whatsapp/status', async (_request, response, next) => {
-  try {
-    response.json(await getWhatsAppStatus())
-  } catch (error) {
-    next(error)
-  }
-})
-
-app.post('/api/whatsapp/messages/test', async (request, response, next) => {
-  try {
-    const data = await sendHelloWorldTest(request.body)
-    response.status(201).json(data)
-  } catch (error) {
-    next(error)
-  }
-})
-
-app.post('/api/whatsapp/messages/reminder', async (request, response, next) => {
-  try {
-    const data = await sendAppointmentReminder(request.body)
-    response.status(201).json(data)
   } catch (error) {
     next(error)
   }

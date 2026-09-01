@@ -76,7 +76,21 @@ create table if not exists citas (
   motivo text not null,
   notas text not null default '',
   estado text not null default 'programada' check (estado in ('programada', 'confirmada', 'completada', 'cancelada')),
-  recordatorio_whatsapp boolean not null default true,
+  created_at timestamptz not null default timezone('utc', now()),
+  updated_at timestamptz not null default timezone('utc', now())
+);
+
+create table if not exists solicitudes_analisis (
+  id uuid primary key default gen_random_uuid(),
+  paciente_id uuid not null references pacientes(id) on delete cascade,
+  fecha date not null default current_date,
+  nombre_paciente text not null default '',
+  telefono text not null default '',
+  cedula text not null default '',
+  sexo text not null default '',
+  diagnostico text not null default '',
+  estudios jsonb not null default '[]'::jsonb,
+  notas text not null default '',
   created_at timestamptz not null default timezone('utc', now()),
   updated_at timestamptz not null default timezone('utc', now())
 );
@@ -85,6 +99,8 @@ create index if not exists idx_resultados_pruebas_paciente on resultados_pruebas
 create index if not exists idx_resultados_laboratorio_paciente on resultados_laboratorio(paciente_id);
 create index if not exists idx_citas_paciente on citas(paciente_id);
 create index if not exists idx_citas_fecha_hora on citas(fecha_hora);
+create index if not exists idx_solicitudes_analisis_paciente on solicitudes_analisis(paciente_id);
+create index if not exists idx_solicitudes_analisis_fecha on solicitudes_analisis(fecha desc);
 
 drop trigger if exists pacientes_set_updated_at on pacientes;
 create trigger pacientes_set_updated_at
@@ -107,5 +123,11 @@ execute function set_updated_at();
 drop trigger if exists citas_set_updated_at on citas;
 create trigger citas_set_updated_at
 before update on citas
+for each row
+execute function set_updated_at();
+
+drop trigger if exists solicitudes_analisis_set_updated_at on solicitudes_analisis;
+create trigger solicitudes_analisis_set_updated_at
+before update on solicitudes_analisis
 for each row
 execute function set_updated_at();

@@ -9,6 +9,8 @@ import type {
   ResultadoLaboratorioFormData,
   ResultadoPrueba,
   ResultadoPruebaFormData,
+  SolicitudAnalisis,
+  SolicitudAnalisisFormData,
 } from '../types'
 
 async function parseJson(response: Response) {
@@ -160,6 +162,35 @@ export function updateCita(id: string, data: CitaFormData): Promise<Cita> {
 
 export async function deleteCita(id: string): Promise<void> {
   await apiRequest(`/api/citas/${id}`, {
+    method: 'DELETE',
+  })
+}
+
+export function createSolicitudAnalisis(data: SolicitudAnalisisFormData): Promise<SolicitudAnalisis> {
+  return apiRequest<SolicitudAnalisis>('/api/solicitudes-analisis', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(data),
+  })
+}
+
+export function updateSolicitudAnalisis(
+  id: string,
+  data: SolicitudAnalisisFormData,
+): Promise<SolicitudAnalisis> {
+  return apiRequest<SolicitudAnalisis>(`/api/solicitudes-analisis/${id}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(data),
+  })
+}
+
+export async function deleteSolicitudAnalisis(id: string): Promise<void> {
+  await apiRequest(`/api/solicitudes-analisis/${id}`, {
     method: 'DELETE',
   })
 }
