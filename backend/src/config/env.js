@@ -30,6 +30,13 @@ export const env = {
     redirectUri: getEnv('GOOGLE_REDIRECT_URI', 'http://localhost:3001/api/google/oauth/callback'),
     calendarId: getEnv('GOOGLE_CALENDAR_ID', 'primary'),
   },
+  whatsapp: {
+    apiVersion: getEnv('WHATSAPP_API_VERSION', 'v23.0'),
+    accessToken: getEnv('WHATSAPP_ACCESS_TOKEN'),
+    phoneNumberId: getEnv('WHATSAPP_PHONE_NUMBER_ID'),
+    businessAccountId: getEnv('WHATSAPP_BUSINESS_ACCOUNT_ID'),
+    testRecipient: getEnv('WHATSAPP_TEST_RECIPIENT'),
+  },
   tokenFilePath: path.join(backendRoot, '.tokens', 'google-oauth.json'),
 }
 

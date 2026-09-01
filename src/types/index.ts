@@ -46,20 +46,6 @@ export interface ResultadoLaboratorio {
   archivo: ArchivoAdjunto | null
 }
 
-export interface SolicitudAnalisis {
-  id: string
-  pacienteId: string
-  fecha: string
-  nombrePaciente: string
-  telefono: string
-  cedula: string
-  sexo: string
-  diagnostico: string
-  estudios: string[]
-  notas: string
-  createdAt: string
-}
-
 export type EstadoCita = 'programada' | 'confirmada' | 'completada' | 'cancelada'
 
 export interface Cita {
@@ -69,13 +55,13 @@ export interface Cita {
   motivo: string
   notas: string
   estado: EstadoCita
+  recordatorioWhatsApp: boolean
 }
 
 export interface ExpedienteData {
   pacientes: Paciente[]
   resultadosPruebas: ResultadoPrueba[]
   resultadosLaboratorio: ResultadoLaboratorio[]
-  solicitudesAnalisis: SolicitudAnalisis[]
   citas: Cita[]
 }
 
@@ -91,8 +77,6 @@ export type PacienteFormData = Omit<Paciente, 'id' | 'fechaRegistro'>
 export type ResultadoPruebaFormData = Omit<ResultadoPrueba, 'id' | 'archivo'>
 
 export type ResultadoLaboratorioFormData = Omit<ResultadoLaboratorio, 'id' | 'archivo'>
-
-export type SolicitudAnalisisFormData = Omit<SolicitudAnalisis, 'id' | 'createdAt'>
 
 export type CitaFormData = Omit<Cita, 'id'>
 

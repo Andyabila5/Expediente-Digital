@@ -4,7 +4,6 @@ import { useExpediente } from '../context/ExpedienteContext'
 import { generarExpedientePDF } from '../utils/pdfGenerator'
 import PacienteFormFields from '../components/PacienteFormFields'
 import PacienteExpedienteView from '../components/PacienteExpedienteView'
-import SolicitudAnalisisSection from '../components/SolicitudAnalisisSection'
 import { pacienteToFormData } from '../constants/pacienteForm'
 import { API_BASE_URL } from '../config'
 import type { PacienteFormData } from '../types'
@@ -21,10 +20,6 @@ export default function PacienteDetalle() {
     obtenerPruebasPaciente,
     obtenerLaboratoriosPaciente,
     obtenerCitasPaciente,
-    obtenerSolicitudesAnalisisPaciente,
-    agregarSolicitudAnalisis,
-    actualizarSolicitudAnalisis,
-    eliminarSolicitudAnalisis,
   } = useExpediente()
 
   const [guardando, setGuardando] = useState(false)
@@ -58,7 +53,6 @@ export default function PacienteDetalle() {
   const pruebas = obtenerPruebasPaciente(paciente.id)
   const laboratorios = obtenerLaboratoriosPaciente(paciente.id)
   const citas = obtenerCitasPaciente(paciente.id)
-  const solicitudesAnalisis = obtenerSolicitudesAnalisisPaciente(paciente.id)
 
   const iniciarEdicion = () => {
     setForm(pacienteToFormData(paciente))
@@ -127,14 +121,6 @@ export default function PacienteDetalle() {
       )}
 
       <div className="secciones-expediente">
-        <SolicitudAnalisisSection
-          paciente={paciente}
-          solicitudes={solicitudesAnalisis}
-          onCreate={agregarSolicitudAnalisis}
-          onUpdate={actualizarSolicitudAnalisis}
-          onDelete={eliminarSolicitudAnalisis}
-        />
-
         <div className="card seccion-card">
           <div className="seccion-header">
             <h3>Agenda del paciente</h3>
@@ -148,7 +134,10 @@ export default function PacienteDetalle() {
                 <li key={cita.id}>
                   <strong>{cita.motivo}</strong>
                   <span>{new Date(cita.fechaHora).toLocaleString('es-MX')}</span>
-                  <p>Estado: {cita.estado}</p>
+                  <p>
+                    Estado: {cita.estado}
+                    {cita.recordatorioWhatsApp ? ' · Recordatorio por WhatsApp pendiente' : ''}
+                  </p>
                 </li>
               ))}
             </ul>

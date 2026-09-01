@@ -65,24 +65,9 @@ const CITA_SELECT = `
     fecha_hora,
     motivo,
     notas,
-    estado
+    estado,
+    recordatorio_whatsapp
   from citas
-`
-
-const SOLICITUD_ANALISIS_SELECT = `
-  select
-    id,
-    paciente_id,
-    fecha,
-    nombre_paciente,
-    telefono,
-    cedula,
-    sexo,
-    diagnostico,
-    estudios,
-    notas,
-    created_at
-  from solicitudes_analisis
 `
 
 function createHttpError(message, status = 400, details = null) {
@@ -185,6 +170,10 @@ function normalizeCita(data = {}) {
     motivo: asText(data.motivo).trim(),
     notas: asText(data.notas).trim(),
     estado: asText(data.estado).trim() || 'programada',
+    recordatorioWhatsApp:
+      typeof data.recordatorioWhatsApp === 'boolean'
+        ? data.recordatorioWhatsApp
+        : ['true', '1', 'on', 'yes'].includes(asText(data.recordatorioWhatsApp).toLowerCase()),
   }
 
   if (!cita.pacienteId || !cita.fechaHora || !cita.motivo) {
@@ -192,34 +181,6 @@ function normalizeCita(data = {}) {
   }
 
   return cita
-}
-
-function normalizeSolicitudAnalisis(data = {}) {
-  const estudios = Array.isArray(data.estudios)
-    ? data.estudios.map(item => asText(item).trim()).filter(Boolean)
-    : []
-
-  const solicitud = {
-    pacienteId: asText(data.pacienteId).trim(),
-    fecha: asText(data.fecha).trim() || new Date().toISOString().slice(0, 10),
-    nombrePaciente: asText(data.nombrePaciente).trim(),
-    telefono: asText(data.telefono).trim(),
-    cedula: asText(data.cedula).trim(),
-    sexo: asText(data.sexo).trim(),
-    diagnostico: asText(data.diagnostico).trim(),
-    estudios,
-    notas: asText(data.notas).trim(),
-  }
-
-  if (!solicitud.pacienteId) {
-    throw createHttpError('El paciente es obligatorio para la solicitud de analisis.')
-  }
-
-  if (estudios.length === 0) {
-    throw createHttpError('Debes seleccionar al menos un estudio.')
-  }
-
-  return solicitud
 }
 
 function mapArchivo(row, basePath) {
@@ -297,28 +258,7 @@ function mapCita(row) {
     motivo: row.motivo,
     notas: row.notas ?? '',
     estado: row.estado,
-  }
-}
-
-function mapSolicitudAnalisis(row) {
-  const estudios = Array.isArray(row.estudios)
-    ? row.estudios
-    : typeof row.estudios === 'string'
-      ? JSON.parse(row.estudios || '[]')
-      : []
-
-  return {
-    id: row.id,
-    pacienteId: row.paciente_id,
-    fecha: toIsoValue(row.fecha),
-    nombrePaciente: row.nombre_paciente ?? '',
-    telefono: row.telefono ?? '',
-    cedula: row.cedula ?? '',
-    sexo: row.sexo ?? '',
-    diagnostico: row.diagnostico ?? '',
-    estudios,
-    notas: row.notas ?? '',
-    createdAt: toIsoValue(row.created_at),
+    recordatorioWhatsApp: Boolean(row.recordatorio_whatsapp),
   }
 }
 
@@ -336,12 +276,11 @@ function attachmentColumns(file) {
 }
 
 export async function getExpedienteData() {
-  const [pacientes, pruebas, laboratorios, citas, solicitudesAnalisis] = await Promise.all([
+  const [pacientes, pruebas, laboratorios, citas] = await Promise.all([
     pool.query(`${PACIENTE_SELECT} order by fecha_registro desc, nombre asc`),
     pool.query(`${RESULTADO_PRUEBA_SELECT} order by fecha desc, created_at desc`),
     pool.query(`${RESULTADO_LABORATORIO_SELECT} order by fecha desc, created_at desc`),
     pool.query(`${CITA_SELECT} order by fecha_hora asc`),
-    pool.query(`${SOLICITUD_ANALISIS_SELECT} order by fecha desc, created_at desc`),
   ])
 
   return {
@@ -349,7 +288,6 @@ export async function getExpedienteData() {
     resultadosPruebas: pruebas.rows.map(mapResultadoPrueba),
     resultadosLaboratorio: laboratorios.rows.map(mapResultadoLaboratorio),
     citas: citas.rows.map(mapCita),
-    solicitudesAnalisis: solicitudesAnalisis.rows.map(mapSolicitudAnalisis),
   }
 }
 
@@ -680,11 +618,11 @@ export async function createCita(data) {
   const cita = normalizeCita(data)
   const result = await pool.query(
     `
-      insert into citas (paciente_id, fecha_hora, motivo, notas, estado)
-      values ($1, $2, $3, $4, $5)
+      insert into citas (paciente_id, fecha_hora, motivo, notas, estado, recordatorio_whatsapp)
+      values ($1, $2, $3, $4, $5, $6)
       returning *
     `,
-    [cita.pacienteId, cita.fechaHora, cita.motivo, cita.notas, cita.estado],
+    [cita.pacienteId, cita.fechaHora, cita.motivo, cita.notas, cita.estado, cita.recordatorioWhatsApp],
   )
 
   return mapCita(result.rows[0])
@@ -701,11 +639,12 @@ export async function updateCita(id, data) {
         motivo = $4,
         notas = $5,
         estado = $6,
+        recordatorio_whatsapp = $7,
         updated_at = now()
       where id = $1
       returning *
     `,
-    [id, cita.pacienteId, cita.fechaHora, cita.motivo, cita.notas, cita.estado],
+    [id, cita.pacienteId, cita.fechaHora, cita.motivo, cita.notas, cita.estado, cita.recordatorioWhatsApp],
   )
 
   if (result.rowCount === 0) {
@@ -720,78 +659,5 @@ export async function deleteCita(id) {
 
   if (result.rowCount === 0) {
     throw createHttpError('Cita no encontrada.', 404)
-  }
-}
-
-export async function createSolicitudAnalisis(data) {
-  const solicitud = normalizeSolicitudAnalisis(data)
-  const result = await pool.query(
-    `
-      insert into solicitudes_analisis (
-        paciente_id, fecha, nombre_paciente, telefono, cedula, sexo, diagnostico, estudios, notas
-      ) values ($1, $2, $3, $4, $5, $6, $7, $8::jsonb, $9)
-      returning id, paciente_id, fecha, nombre_paciente, telefono, cedula, sexo, diagnostico, estudios, notas, created_at
-    `,
-    [
-      solicitud.pacienteId,
-      solicitud.fecha,
-      solicitud.nombrePaciente,
-      solicitud.telefono,
-      solicitud.cedula,
-      solicitud.sexo,
-      solicitud.diagnostico,
-      JSON.stringify(solicitud.estudios),
-      solicitud.notas,
-    ],
-  )
-
-  return mapSolicitudAnalisis(result.rows[0])
-}
-
-export async function updateSolicitudAnalisis(id, data) {
-  const solicitud = normalizeSolicitudAnalisis(data)
-  const result = await pool.query(
-    `
-      update solicitudes_analisis
-      set
-        paciente_id = $2,
-        fecha = $3,
-        nombre_paciente = $4,
-        telefono = $5,
-        cedula = $6,
-        sexo = $7,
-        diagnostico = $8,
-        estudios = $9::jsonb,
-        notas = $10,
-        updated_at = now()
-      where id = $1
-      returning id, paciente_id, fecha, nombre_paciente, telefono, cedula, sexo, diagnostico, estudios, notas, created_at
-    `,
-    [
-      id,
-      solicitud.pacienteId,
-      solicitud.fecha,
-      solicitud.nombrePaciente,
-      solicitud.telefono,
-      solicitud.cedula,
-      solicitud.sexo,
-      solicitud.diagnostico,
-      JSON.stringify(solicitud.estudios),
-      solicitud.notas,
-    ],
-  )
-
-  if (result.rowCount === 0) {
-    throw createHttpError('Solicitud de analisis no encontrada.', 404)
-  }
-
-  return mapSolicitudAnalisis(result.rows[0])
-}
-
-export async function deleteSolicitudAnalisis(id) {
-  const result = await pool.query('delete from solicitudes_analisis where id = $1 returning id', [id])
-
-  if (result.rowCount === 0) {
-    throw createHttpError('Solicitud de analisis no encontrada.', 404)
   }
 }
