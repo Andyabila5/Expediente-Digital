@@ -8,6 +8,7 @@ const defaultData: ExpedienteData = {
   resultadosPruebas: [],
   resultadosLaboratorio: [],
   citas: [],
+  solicitudesAnalisis: [],
 }
 
 export function loadData(): ExpedienteData {
@@ -22,6 +23,7 @@ export function loadData(): ExpedienteData {
       resultadosPruebas: parsed.resultadosPruebas ?? [],
       resultadosLaboratorio: parsed.resultadosLaboratorio ?? [],
       citas: parsed.citas ?? [],
+      solicitudesAnalisis: parsed.solicitudesAnalisis ?? [],
     }
   } catch {
     return defaultData
