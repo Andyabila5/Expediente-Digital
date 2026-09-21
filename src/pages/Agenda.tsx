@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useExpediente } from '../context/ExpedienteContext'
-import { API_BASE_URL } from '../config'
+import { API_BASE_URL, fetchGoogleStatus, fetchGoogleAuthUrl, createGoogleCalendarEvent } from '../utils/api'
 import type { Cita, CitaFormData, EstadoCita } from '../types'
 import './Agenda.css'
 
@@ -172,16 +172,14 @@ export default function Agenda() {
 
   const loadIntegrationStatus = useCallback(async () => {
     try {
-      const [healthResponse, googleResponse] = await Promise.all([
+      const [healthResponse, googleData] = await Promise.all([
         fetch(`${API_BASE_URL}/api/health`),
-        fetch(`${API_BASE_URL}/api/google/status`),
+        fetchGoogleStatus(),
       ])
 
-      if (!healthResponse.ok || !googleResponse.ok) {
+      if (!healthResponse.ok) {
         throw new Error('No fue posible leer el estado del backend.')
       }
-
-      const googleData = (await googleResponse.json()) as GoogleStatus
 
       setBackendOnline(true)
       setGoogleStatus(googleData)
@@ -316,11 +314,10 @@ export default function Agenda() {
     setGoogleMessage('Preparando autenticación de Google Calendar...')
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/google/auth-url`)
-      const data = await response.json()
+      const data = await fetchGoogleAuthUrl()
 
-      if (!response.ok || !data?.url) {
-        throw new Error(data?.message || 'No se pudo generar el enlace de autenticación.')
+      if (!data?.url) {
+        throw new Error('No se pudo generar el enlace de autenticación.')
       }
 
       window.open(data.url, '_blank', 'noopener,noreferrer')
@@ -348,26 +345,14 @@ export default function Agenda() {
     setGoogleMessage(`Creando evento de Google Calendar para ${paciente.nombre}...`)
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/google/calendar/events`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          summary: `${cita.motivo} - ${paciente.nombre}`,
-          description: cita.notas || `Cita registrada en Expediente Digital para ${paciente.nombre}.`,
-          start: new Date(cita.fechaHora).toISOString(),
-          end: addMinutes(cita.fechaHora, 30),
-          timeZone: 'America/Costa_Rica',
-          attendees: paciente.correo ? [paciente.correo] : [],
-        }),
+      const data = await createGoogleCalendarEvent({
+        summary: `${cita.motivo} - ${paciente.nombre}`,
+        description: cita.notas || `Cita registrada en Expediente Digital para ${paciente.nombre}.`,
+        start: new Date(cita.fechaHora).toISOString(),
+        end: addMinutes(cita.fechaHora, 30),
+        timeZone: 'America/Costa_Rica',
+        attendees: paciente.correo ? [paciente.correo] : [],
       })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data?.message || 'No se pudo crear el evento en Google Calendar.')
-      }
 
       setGoogleMessage('Evento creado correctamente en Google Calendar.')
 

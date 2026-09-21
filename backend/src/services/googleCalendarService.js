@@ -1,7 +1,8 @@
-import fs from 'node:fs/promises'
-import path from 'node:path'
 import { google } from 'googleapis'
 import { env, ensureConfigured } from '../config/env.js'
+import { pool } from '../db/pool.js'
+
+const TOKEN_KEY = 'google_oauth_tokens'
 
 function createOAuthClient() {
   ensureConfigured(
@@ -18,16 +19,24 @@ function createOAuthClient() {
 
 async function readStoredTokens() {
   try {
-    const content = await fs.readFile(env.tokenFilePath, 'utf8')
-    return JSON.parse(content)
+    const result = await pool.query(
+      'select value from app_settings where key = $1 limit 1',
+      [TOKEN_KEY],
+    )
+    if (!result.rows[0]) return null
+    return JSON.parse(result.rows[0].value)
   } catch {
     return null
   }
 }
 
 async function saveTokens(tokens) {
-  await fs.mkdir(path.dirname(env.tokenFilePath), { recursive: true })
-  await fs.writeFile(env.tokenFilePath, JSON.stringify(tokens, null, 2), 'utf8')
+  await pool.query(
+    `insert into app_settings (key, value)
+     values ($1, $2)
+     on conflict (key) do update set value = excluded.value`,
+    [TOKEN_KEY, JSON.stringify(tokens)],
+  )
 }
 
 async function getAuthorizedClient() {
@@ -108,14 +117,8 @@ export async function createCalendarEvent({
     requestBody: {
       summary,
       description,
-      start: {
-        dateTime: start,
-        timeZone,
-      },
-      end: {
-        dateTime: end,
-        timeZone,
-      },
+      start: { dateTime: start, timeZone },
+      end: { dateTime: end, timeZone },
       attendees: attendees.map(email => ({ email })),
     },
   })

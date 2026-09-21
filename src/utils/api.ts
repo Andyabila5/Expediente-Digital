@@ -166,3 +166,35 @@ export async function deleteCita(id: string): Promise<void> {
     method: 'DELETE',
   })
 }
+
+// ─── Google Calendar ────────────────────────────────────────────────────────
+
+export interface GoogleStatus {
+  configured: boolean
+  authenticated: boolean
+  redirectUri: string
+  calendarId: string
+}
+
+export function fetchGoogleStatus(): Promise<GoogleStatus> {
+  return apiRequest<GoogleStatus>('/api/google/status')
+}
+
+export function fetchGoogleAuthUrl(): Promise<{ url: string }> {
+  return apiRequest<{ url: string }>('/api/google/auth-url')
+}
+
+export function createGoogleCalendarEvent(data: {
+  summary: string
+  description?: string
+  start: string
+  end: string
+  timeZone?: string
+  attendees?: string[]
+}): Promise<{ id: string; htmlLink: string; status: string; summary: string }> {
+  return apiRequest('/api/google/calendar/events', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  })
+}

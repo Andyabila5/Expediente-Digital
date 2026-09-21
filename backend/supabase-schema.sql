@@ -144,3 +144,17 @@ create table if not exists audit_log (
 
 create index if not exists idx_audit_log_username on audit_log(username);
 create index if not exists idx_audit_log_created_at on audit_log(created_at desc);
+
+-- ─── Google OAuth tokens (persiste en BD para sobrevivir deploys) ───────────
+
+create table if not exists app_settings (
+  key text primary key,
+  value text not null,
+  updated_at timestamptz not null default timezone('utc', now())
+);
+
+drop trigger if exists app_settings_set_updated_at on app_settings;
+create trigger app_settings_set_updated_at
+before update on app_settings
+for each row
+execute function set_updated_at();
