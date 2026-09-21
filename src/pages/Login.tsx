@@ -31,10 +31,16 @@ export default function Login() {
 
   return (
     <div className="login-shell">
-      <div className="login-card card">
+      <div className="login-card">
+        <div className="login-brand">
+          <div className="login-brand-icon">🏥</div>
+          <span className="login-brand-name">Expediente Digital</span>
+        </div>
+
         <div className="login-copy">
-          <span className="login-eyebrow">Acceso protegido</span>
-          <h1>Expediente Digital</h1>
+          <span className="login-eyebrow">🔒 Acceso protegido</span>
+          <h1>Bienvenido</h1>
+          <p>Ingresa tus credenciales para continuar.</p>
         </div>
 
         <form className="login-form" onSubmit={handleSubmit}>
@@ -46,6 +52,7 @@ export default function Login() {
               value={username}
               onChange={event => setUsername(event.target.value)}
               autoComplete="username"
+              placeholder="nombre de usuario"
               disabled={isSubmitting}
             />
           </div>
@@ -58,6 +65,7 @@ export default function Login() {
               value={password}
               onChange={event => setPassword(event.target.value)}
               autoComplete="current-password"
+              placeholder="••••••••"
               disabled={isSubmitting}
             />
           </div>
@@ -72,6 +80,10 @@ export default function Login() {
             {isSubmitting ? 'Verificando…' : 'Ingresar'}
           </button>
         </form>
+
+        <div className="login-footer">
+          Sistema de gestión de expedientes clínicos
+        </div>
       </div>
     </div>
   )
