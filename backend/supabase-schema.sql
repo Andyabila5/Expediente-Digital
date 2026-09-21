@@ -109,3 +109,38 @@ create trigger citas_set_updated_at
 before update on citas
 for each row
 execute function set_updated_at();
+
+-- ─── Auth: users & audit log ───────────────────────────────────────────────
+
+create table if not exists users (
+  id uuid primary key default gen_random_uuid(),
+  username text not null unique,
+  password_hash text not null,
+  created_at timestamptz not null default timezone('utc', now()),
+  updated_at timestamptz not null default timezone('utc', now())
+);
+
+drop trigger if exists users_set_updated_at on users;
+create trigger users_set_updated_at
+before update on users
+for each row
+execute function set_updated_at();
+
+-- Seed: run this once after creating the table.
+-- Replace the hash below with the output of:
+--   node -e "const b=require('bcryptjs'); b.hash('YOUR_PASSWORD',12).then(console.log)"
+-- insert into users (username, password_hash) values ('admin', '$2a$12$REPLACE_THIS_HASH');
+
+create table if not exists audit_log (
+  id bigserial primary key,
+  username text not null,
+  action text not null,           -- e.g. 'login', 'logout', 'create_paciente', 'delete_paciente'
+  entity_type text,               -- e.g. 'paciente', 'cita', 'resultado_prueba'
+  entity_id text,                 -- UUID of the affected record, if any
+  ip_address text,
+  user_agent text,
+  created_at timestamptz not null default timezone('utc', now())
+);
+
+create index if not exists idx_audit_log_username on audit_log(username);
+create index if not exists idx_audit_log_created_at on audit_log(created_at desc);

@@ -23,7 +23,10 @@ async function parseJson(response: Response) {
 }
 
 async function apiRequest<T>(url: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(`${API_BASE_URL}${url}`, init)
+  const response = await fetch(`${API_BASE_URL}${url}`, {
+    ...init,
+    credentials: 'include', // envía la cookie auth_token en cada solicitud
+  })
   const data = await parseJson(response)
 
   if (!response.ok) {

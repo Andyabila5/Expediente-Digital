@@ -20,6 +20,7 @@ function getBooleanEnv(name, fallback = false) {
 export const env = {
   port: Number(getEnv('BACKEND_PORT', '3001')),
   frontendUrl: getEnv('FRONTEND_URL', 'http://localhost:5173'),
+  jwtSecret: getEnv('JWT_SECRET'),
   database: {
     url: getEnv('DATABASE_URL', getEnv('SUPABASE_DB_URL')),
     ssl: getBooleanEnv('DATABASE_SSL', true),
@@ -41,3 +42,9 @@ export function ensureConfigured(values, message) {
     throw error
   }
 }
+
+// Falla rápido al arrancar si no hay JWT_SECRET definido
+ensureConfigured(
+  [env.jwtSecret],
+  'Falta JWT_SECRET en backend/.env. Genera uno con: node -e "console.log(require(\'crypto\').randomBytes(64).toString(\'hex\'))"',
+)

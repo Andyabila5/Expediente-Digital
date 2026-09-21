@@ -7,23 +7,26 @@ export default function Login() {
   const navigate = useNavigate()
   const location = useLocation()
   const { login } = useAuth()
-  const [username, setUsername] = useState('admin')
+  const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const from = (location.state as { from?: string } | null)?.from ?? '/'
 
-  const handleSubmit = (event: React.FormEvent) => {
+  const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault()
-    const success = login(username, password)
-
-    if (!success) {
-      setError('Usuario o contraseña incorrectos.')
-      return
-    }
-
     setError('')
-    navigate(from, { replace: true })
+    setIsSubmitting(true)
+
+    try {
+      await login(username, password)
+      navigate(from, { replace: true })
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No fue posible iniciar sesión.')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -43,6 +46,7 @@ export default function Login() {
               value={username}
               onChange={event => setUsername(event.target.value)}
               autoComplete="username"
+              disabled={isSubmitting}
             />
           </div>
 
@@ -54,13 +58,18 @@ export default function Login() {
               value={password}
               onChange={event => setPassword(event.target.value)}
               autoComplete="current-password"
+              disabled={isSubmitting}
             />
           </div>
 
           {error && <div className="alert login-alert">{error}</div>}
 
-          <button type="submit" className="btn btn-primary login-submit">
-            Ingresar
+          <button
+            type="submit"
+            className="btn btn-primary login-submit"
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? 'Verificando…' : 'Ingresar'}
           </button>
         </form>
       </div>

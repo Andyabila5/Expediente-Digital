@@ -1,6 +1,6 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
-import { ExpedienteProvider } from './context/ExpedienteContext'
 import { AuthProvider } from './context/AuthContext'
+import { ExpedienteProvider } from './context/ExpedienteContext'
 import Layout from './components/Layout'
 import ProtectedRoute from './components/ProtectedRoute'
 import Pacientes from './pages/Pacientes'
@@ -13,22 +13,32 @@ import Login from './pages/Login'
 export default function App() {
   return (
     <AuthProvider>
-      <ExpedienteProvider>
-        <BrowserRouter>
-          <Routes>
-            <Route path="/login" element={<Login />} />
-            <Route element={<ProtectedRoute />}>
-              <Route path="/" element={<Layout />}>
-                <Route index element={<Pacientes />} />
-                <Route path="paciente/:id" element={<PacienteDetalle />} />
-                <Route path="pruebas" element={<ResultadosPruebas />} />
-                <Route path="laboratorio" element={<ResultadosLaboratorio />} />
-                <Route path="agenda" element={<Agenda />} />
-              </Route>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route element={<ProtectedRoute />}>
+            {/*
+              ExpedienteProvider ahora vive DENTRO de ProtectedRoute.
+              Esto garantiza que fetchExpedienteData() solo se ejecuta
+              cuando el usuario tiene una sesión autenticada.
+            */}
+            <Route
+              path="/"
+              element={
+                <ExpedienteProvider>
+                  <Layout />
+                </ExpedienteProvider>
+              }
+            >
+              <Route index element={<Pacientes />} />
+              <Route path="paciente/:id" element={<PacienteDetalle />} />
+              <Route path="pruebas" element={<ResultadosPruebas />} />
+              <Route path="laboratorio" element={<ResultadosLaboratorio />} />
+              <Route path="agenda" element={<Agenda />} />
             </Route>
-          </Routes>
-        </BrowserRouter>
-      </ExpedienteProvider>
+          </Route>
+        </Routes>
+      </BrowserRouter>
     </AuthProvider>
   )
 }
