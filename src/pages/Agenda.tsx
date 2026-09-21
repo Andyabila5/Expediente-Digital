@@ -50,6 +50,18 @@ interface GoogleStatus {
   calendarId: string
 }
 
+interface PendingWhatsappConfirmation {
+  citaId: string
+  pacienteNombre: string
+}
+
+interface RecentWhatsappPrompt {
+  citaId: string
+  pacienteNombre: string
+  fechaHora: string
+  telefonoDisponible: boolean
+}
+
 function addMinutes(isoDateTime: string, minutes: number) {
   const date = new Date(isoDateTime)
   date.setMinutes(date.getMinutes() + minutes)
@@ -109,6 +121,32 @@ function getDateKeyFromIso(value: string) {
   return getDateKey(new Date(value))
 }
 
+function normalizePhoneForWhatsApp(phone: string) {
+  const digits = phone.replace(/\D/g, '')
+
+  if (!digits) return ''
+  if (digits.startsWith('00')) return digits.slice(2)
+  if (digits.startsWith('506')) return digits
+  if (digits.length === 8) return `506${digits}`
+
+  return digits
+}
+
+function buildWhatsappMessage(patientName: string, cita: Cita) {
+  const fecha = new Date(cita.fechaHora).toLocaleDateString('es-CR', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  })
+  const hora = new Date(cita.fechaHora).toLocaleTimeString('es-CR', {
+    hour: 'numeric',
+    minute: '2-digit',
+  })
+
+  return `Hola ${patientName}, se le recuerda su cita en Novauroclinica para el ${fecha} a las ${hora}.`
+}
+
 export default function Agenda() {
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
@@ -129,6 +167,11 @@ export default function Agenda() {
   const [openingGoogleAuth, setOpeningGoogleAuth] = useState(false)
   const [savingAppointment, setSavingAppointment] = useState(false)
   const [deletingAppointmentId, setDeletingAppointmentId] = useState<string | null>(null)
+  const [openingWhatsappId, setOpeningWhatsappId] = useState<string | null>(null)
+  const [pendingWhatsappConfirmation, setPendingWhatsappConfirmation] =
+    useState<PendingWhatsappConfirmation | null>(null)
+  const [recentWhatsappPrompt, setRecentWhatsappPrompt] = useState<RecentWhatsappPrompt | null>(null)
+  const [agendaMessage, setAgendaMessage] = useState('')
 
   const pacientesMap = useMemo(
     () => new Map(pacientes.map(paciente => [paciente.id, paciente])),
@@ -176,6 +219,49 @@ export default function Agenda() {
     setGoogleMessage('Google Calendar conectado correctamente.')
     setSearchParams({}, { replace: true })
   }, [loadIntegrationStatus, searchParams, setSearchParams])
+
+  useEffect(() => {
+    if (!pendingWhatsappConfirmation) return
+
+    const handleFocus = () => {
+      const sent = window.confirm(
+        `¿Ya enviaste el mensaje de confirmación a ${pendingWhatsappConfirmation.pacienteNombre}?`,
+      )
+
+      if (!sent) {
+        setAgendaMessage('El mensaje de WhatsApp quedó abierto, pero la cita aún no se marcó como confirmada.')
+        setPendingWhatsappConfirmation(null)
+        return
+      }
+
+      const cita = citas.find(item => item.id === pendingWhatsappConfirmation.citaId)
+      if (!cita) {
+        setAgendaMessage('No se encontró la cita para actualizar su estado.')
+        setPendingWhatsappConfirmation(null)
+        return
+      }
+
+      void actualizarCita(pendingWhatsappConfirmation.citaId, {
+        pacienteId: cita.pacienteId,
+        fechaHora: cita.fechaHora,
+        motivo: cita.motivo,
+        notas: cita.notas,
+        estado: 'confirmada',
+      })
+        .then(() => {
+          setAgendaMessage(`La cita de ${pendingWhatsappConfirmation.pacienteNombre} quedó marcada como confirmada.`)
+        })
+        .catch(() => {
+          setAgendaMessage('No fue posible marcar la cita como confirmada después del envío por WhatsApp.')
+        })
+        .finally(() => {
+          setPendingWhatsappConfirmation(null)
+        })
+    }
+
+    window.addEventListener('focus', handleFocus, { once: true })
+    return () => window.removeEventListener('focus', handleFocus)
+  }, [actualizarCita, citas, pendingWhatsappConfirmation])
 
   const citasFiltradas = useMemo(
     () =>
@@ -319,8 +405,27 @@ export default function Agenda() {
 
       if (editingId) {
         await actualizarCita(editingId, payload)
+        setRecentWhatsappPrompt(null)
+        setAgendaMessage('La cita se actualizó correctamente.')
       } else {
-        await agregarCita(payload)
+        const createdCita = await agregarCita(payload)
+        const paciente = pacientesMap.get(createdCita.pacienteId)
+        const phone = normalizePhoneForWhatsApp(paciente?.telefono ?? '')
+        const citaDate = new Date(createdCita.fechaHora)
+
+        setCurrentMonth(new Date(citaDate.getFullYear(), citaDate.getMonth(), 1))
+        setSelectedDateKey(getDateKeyFromIso(createdCita.fechaHora))
+        setRecentWhatsappPrompt({
+          citaId: createdCita.id,
+          pacienteNombre: paciente?.nombre ?? 'Paciente',
+          fechaHora: createdCita.fechaHora,
+          telefonoDisponible: Boolean(phone),
+        })
+        setAgendaMessage(
+          phone
+            ? `La cita de ${paciente?.nombre ?? 'Paciente'} fue creada. Ya puedes confirmarla por WhatsApp.`
+            : `La cita fue creada, pero el expediente no tiene un número válido para WhatsApp.`,
+        )
       }
 
       resetForm()
@@ -341,6 +446,39 @@ export default function Agenda() {
       estado: cita.estado,
     })
     setShowForm(true)
+  }
+
+  const handleOpenWhatsapp = async (citaId: string) => {
+    const cita = citas.find(item => item.id === citaId)
+    if (!cita) return
+
+    const paciente = pacientesMap.get(cita.pacienteId)
+    if (!paciente) {
+      setAgendaMessage('No se encontró el paciente asociado a la cita.')
+      return
+    }
+
+    const phone = normalizePhoneForWhatsApp(paciente.telefono)
+    if (!phone) {
+      setAgendaMessage('Este expediente no tiene un número de WhatsApp válido.')
+      return
+    }
+
+    const message = buildWhatsappMessage(paciente.nombre, cita)
+    const url = `https://web.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(message)}`
+
+    setOpeningWhatsappId(citaId)
+    setAgendaMessage(`Se abrió WhatsApp Web para ${paciente.nombre}. Cuando vuelvas, podrás marcar la cita como confirmada.`)
+
+    try {
+      window.open(url, '_blank', 'noopener,noreferrer')
+      setPendingWhatsappConfirmation({
+        citaId,
+        pacienteNombre: paciente.nombre,
+      })
+    } finally {
+      setOpeningWhatsappId(null)
+    }
   }
 
   const handleSelectDate = (date: Date) => {
@@ -414,6 +552,7 @@ export default function Agenda() {
       </div>
 
       {error && <div className="alert">{error}</div>}
+      {agendaMessage && <div className="alert">{agendaMessage}</div>}
 
       <div className="agenda-summary">
         <div className="card summary-card">
@@ -429,6 +568,51 @@ export default function Agenda() {
           <strong>{resumen.mes}</strong>
         </div>
       </div>
+
+      {recentWhatsappPrompt && (
+        <section className="card confirmation-panel">
+          <div className="confirmation-panel-copy">
+            <div>
+              <h3>Confirmar cita</h3>
+              <p className="page-subtitle">
+                {recentWhatsappPrompt.pacienteNombre} quedó agendado para{' '}
+                {formatFechaHora(recentWhatsappPrompt.fechaHora)}.
+              </p>
+            </div>
+            <span
+              className={`integration-badge ${recentWhatsappPrompt.telefonoDisponible ? 'online' : 'offline'}`}
+            >
+              {recentWhatsappPrompt.telefonoDisponible ? 'WhatsApp listo' : 'Sin número válido'}
+            </span>
+          </div>
+
+          <p
+            className={`whatsapp-feedback ${recentWhatsappPrompt.telefonoDisponible ? 'success' : 'error'}`}
+          >
+            {recentWhatsappPrompt.telefonoDisponible
+              ? 'Abre WhatsApp Web para enviar el recordatorio con la fecha y la hora de la cita.'
+              : 'Agrega o corrige el teléfono en el expediente del paciente para poder enviar la confirmación.'}
+          </p>
+
+          <div className="form-actions agenda-form-actions">
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={() => void handleOpenWhatsapp(recentWhatsappPrompt.citaId)}
+              disabled={!recentWhatsappPrompt.telefonoDisponible || openingWhatsappId === recentWhatsappPrompt.citaId}
+            >
+              {openingWhatsappId === recentWhatsappPrompt.citaId ? 'Abriendo WhatsApp...' : 'Confirmar cita por WhatsApp'}
+            </button>
+            <button
+              type="button"
+              className="btn btn-secondary"
+              onClick={() => setRecentWhatsappPrompt(null)}
+            >
+              Cerrar
+            </button>
+          </div>
+        </section>
+      )}
 
       <section className="card whatsapp-panel">
         <div className="whatsapp-panel-header">
@@ -714,6 +898,13 @@ export default function Agenda() {
                           Ver expediente
                         </button>
                       )}
+                      <button
+                        className="btn btn-secondary btn-sm"
+                        onClick={() => void handleOpenWhatsapp(cita.id)}
+                        disabled={openingWhatsappId === cita.id}
+                      >
+                        {openingWhatsappId === cita.id ? 'Abriendo WhatsApp...' : 'Confirmar cita'}
+                      </button>
                       <button className="btn btn-secondary btn-sm" onClick={() => handleEdit(cita.id)}>
                         Editar
                       </button>

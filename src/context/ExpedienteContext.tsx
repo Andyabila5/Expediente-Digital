@@ -56,8 +56,8 @@ interface ExpedienteContextType {
   eliminarResultadoLaboratorio: (id: string) => Promise<void>
   obtenerPruebasPaciente: (pacienteId: string) => ResultadoPrueba[]
   obtenerLaboratoriosPaciente: (pacienteId: string) => ResultadoLaboratorio[]
-  agregarCita: (data: CitaFormData) => Promise<void>
-  actualizarCita: (id: string, data: CitaFormData) => Promise<void>
+  agregarCita: (data: CitaFormData) => Promise<Cita>
+  actualizarCita: (id: string, data: CitaFormData) => Promise<Cita>
   eliminarCita: (id: string) => Promise<void>
   obtenerCitasPaciente: (pacienteId: string) => Cita[]
 }
@@ -171,13 +171,9 @@ export function ExpedienteProvider({ children }: { children: ReactNode }) {
   const obtenerLaboratoriosPaciente = (pacienteId: string) =>
     resultadosLaboratorio.filter(r => r.pacienteId === pacienteId)
 
-  const agregarCita = async (data: CitaFormData) => {
-    await runMutation(() => createCitaRequest(data))
-  }
+  const agregarCita = (data: CitaFormData) => runMutation(() => createCitaRequest(data))
 
-  const actualizarCita = async (id: string, data: CitaFormData) => {
-    await runMutation(() => updateCitaRequest(id, data))
-  }
+  const actualizarCita = (id: string, data: CitaFormData) => runMutation(() => updateCitaRequest(id, data))
 
   const eliminarCita = async (id: string) => {
     await runMutation(async () => {

@@ -9,6 +9,27 @@
   margin-bottom: 1rem;
 }
 
+.confirmation-panel {
+  margin-bottom: 1rem;
+  border: 1px solid rgba(58, 102, 74, 0.18);
+  background: linear-gradient(180deg, rgba(171, 202, 183, 0.14) 0%, rgba(255, 255, 255, 0.94) 100%);
+}
+
+.confirmation-panel-copy {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-bottom: 0.85rem;
+  flex-wrap: wrap;
+}
+
+.confirmation-panel-copy h3 {
+  font-size: 1rem;
+  color: var(--color-text);
+  margin-bottom: 0.2rem;
+}
+
 .whatsapp-panel-header {
   display: flex;
   justify-content: space-between;
