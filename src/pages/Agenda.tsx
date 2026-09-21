@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useExpediente } from '../context/ExpedienteContext'
 import { API_BASE_URL } from '../config'
-import type { CitaFormData, EstadoCita } from '../types'
+import type { Cita, CitaFormData, EstadoCita } from '../types'
 import './Agenda.css'
 
 const EMPTY_CITA_FORM: CitaFormData = {
@@ -24,6 +24,22 @@ function formatFechaHora(value: string) {
   return new Date(value).toLocaleString('es-MX', {
     dateStyle: 'medium',
     timeStyle: 'short',
+  })
+}
+
+function formatHora(value: string) {
+  return new Date(value).toLocaleTimeString('es-MX', {
+    hour: 'numeric',
+    minute: '2-digit',
+  })
+}
+
+function formatFechaLarga(value: Date) {
+  return value.toLocaleDateString('es-MX', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
   })
 }
 
@@ -58,15 +74,54 @@ function fromDatetimeLocalValue(localValue: string) {
   return new Date(localValue).toISOString()
 }
 
+function getDateKey(date: Date) {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+function getMonthLabel(date: Date) {
+  return date.toLocaleDateString('es-MX', {
+    month: 'long',
+    year: 'numeric',
+  })
+}
+
+function getCalendarDays(monthDate: Date) {
+  const firstDayOfMonth = new Date(monthDate.getFullYear(), monthDate.getMonth(), 1)
+  const offset = (firstDayOfMonth.getDay() + 6) % 7
+  const firstVisibleDay = new Date(firstDayOfMonth)
+  firstVisibleDay.setDate(firstDayOfMonth.getDate() - offset)
+
+  return Array.from({ length: 42 }, (_, index) => {
+    const day = new Date(firstVisibleDay)
+    day.setDate(firstVisibleDay.getDate() + index)
+    return day
+  })
+}
+
+function isSameMonth(left: Date, right: Date) {
+  return left.getFullYear() === right.getFullYear() && left.getMonth() === right.getMonth()
+}
+
+function getDateKeyFromIso(value: string) {
+  return getDateKey(new Date(value))
+}
+
 export default function Agenda() {
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const { pacientes, citas, agregarCita, actualizarCita, eliminarCita, loading, error } = useExpediente()
+  const today = useMemo(() => new Date(), [])
+  const todayKey = useMemo(() => getDateKey(today), [today])
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [busqueda, setBusqueda] = useState('')
   const [estadoFiltro, setEstadoFiltro] = useState<'todas' | EstadoCita>('todas')
   const [form, setForm] = useState<CitaFormData>(EMPTY_CITA_FORM)
+  const [currentMonth, setCurrentMonth] = useState(() => new Date(today.getFullYear(), today.getMonth(), 1))
+  const [selectedDateKey, setSelectedDateKey] = useState(todayKey)
   const [backendOnline, setBackendOnline] = useState(false)
   const [googleStatus, setGoogleStatus] = useState<GoogleStatus | null>(null)
   const [googleMessage, setGoogleMessage] = useState('')
@@ -122,17 +177,54 @@ export default function Agenda() {
     setSearchParams({}, { replace: true })
   }, [loadIntegrationStatus, searchParams, setSearchParams])
 
-  const citasFiltradas = citas.filter(cita => {
-    const paciente = pacientesMap.get(cita.pacienteId)
-    const text = `${paciente?.nombre ?? ''} ${cita.motivo} ${cita.notas}`.toLowerCase()
-    const matchesSearch = text.includes(busqueda.toLowerCase())
-    const matchesEstado = estadoFiltro === 'todas' || cita.estado === estadoFiltro
-    return matchesSearch && matchesEstado
-  })
+  const citasFiltradas = useMemo(
+    () =>
+      citas
+        .filter(cita => {
+          const paciente = pacientesMap.get(cita.pacienteId)
+          const text = `${paciente?.nombre ?? ''} ${cita.motivo} ${cita.notas}`.toLowerCase()
+          const matchesSearch = text.includes(busqueda.toLowerCase())
+          const matchesEstado = estadoFiltro === 'todas' || cita.estado === estadoFiltro
+          return matchesSearch && matchesEstado
+        })
+        .sort((left, right) => left.fechaHora.localeCompare(right.fechaHora)),
+    [busqueda, citas, estadoFiltro, pacientesMap],
+  )
+
+  const citasPorDia = useMemo(() => {
+    const grouped = new Map<string, Cita[]>()
+
+    citasFiltradas.forEach(cita => {
+      const key = getDateKeyFromIso(cita.fechaHora)
+      const list = grouped.get(key) ?? []
+      list.push(cita)
+      grouped.set(key, list)
+    })
+
+    return grouped
+  }, [citasFiltradas])
+
+  const calendarDays = useMemo(() => getCalendarDays(currentMonth), [currentMonth])
+
+  const selectedDate = useMemo(() => {
+    const [year, month, day] = selectedDateKey.split('-').map(Number)
+    return new Date(year, month - 1, day)
+  }, [selectedDateKey])
+
+  const citasDiaSeleccionado = useMemo(
+    () => (citasPorDia.get(selectedDateKey) ?? []).slice().sort((left, right) => left.fechaHora.localeCompare(right.fechaHora)),
+    [citasPorDia, selectedDateKey],
+  )
+
+  const citasMesActual = useMemo(
+    () => citasFiltradas.filter(cita => isSameMonth(new Date(cita.fechaHora), currentMonth)),
+    [citasFiltradas, currentMonth],
+  )
 
   const resumen = {
     total: citas.length,
     pendientes: citas.filter(cita => ['programada', 'confirmada'].includes(cita.estado)).length,
+    mes: citasMesActual.length,
   }
 
   const resetForm = () => {
@@ -251,6 +343,27 @@ export default function Agenda() {
     setShowForm(true)
   }
 
+  const handleSelectDate = (date: Date) => {
+    setSelectedDateKey(getDateKey(date))
+    if (!isSameMonth(date, currentMonth)) {
+      setCurrentMonth(new Date(date.getFullYear(), date.getMonth(), 1))
+    }
+  }
+
+  const moveMonth = (offset: number) => {
+    setCurrentMonth(prev => {
+      const next = new Date(prev.getFullYear(), prev.getMonth() + offset, 1)
+      setSelectedDateKey(getDateKey(next))
+      return next
+    })
+  }
+
+  const goToToday = () => {
+    const nextMonth = new Date(today.getFullYear(), today.getMonth(), 1)
+    setCurrentMonth(nextMonth)
+    setSelectedDateKey(todayKey)
+  }
+
   if (loading) {
     return (
       <div className="page">
@@ -310,6 +423,10 @@ export default function Agenda() {
         <div className="card summary-card">
           <span>Próximas</span>
           <strong>{resumen.pendientes}</strong>
+        </div>
+        <div className="card summary-card">
+          <span>En este mes</span>
+          <strong>{resumen.mes}</strong>
         </div>
       </div>
 
@@ -469,68 +586,166 @@ export default function Agenda() {
         </div>
       </div>
 
-      {citasFiltradas.length === 0 ? (
-        <div className="empty-state card">
-          <p>No hay citas que coincidan con el filtro actual.</p>
-        </div>
-      ) : (
-        <div className="agenda-list">
-          {citasFiltradas.map(cita => {
-            const paciente = pacientesMap.get(cita.pacienteId)
+      <section className="agenda-calendar-layout">
+        <div className="card agenda-calendar-card">
+          <div className="agenda-calendar-header">
+            <div>
+              <h3>{getMonthLabel(currentMonth)}</h3>
+              <p className="page-subtitle">
+                Vista mensual con las citas registradas en cada fecha.
+              </p>
+            </div>
 
-            return (
-              <article key={cita.id} className="card agenda-item">
-                <div className="agenda-item-main">
-                  <div className="agenda-item-copy">
-                    <div className="agenda-item-header">
-                      <h3>{paciente?.nombre ?? 'Paciente sin registro'}</h3>
-                      <span className={`agenda-status status-${cita.estado}`}>{cita.estado}</span>
-                    </div>
-                    <p className="agenda-item-time">{formatFechaHora(cita.fechaHora)}</p>
-                    <p className="agenda-item-motivo">{cita.motivo}</p>
-                    {cita.notas && <p className="agenda-item-notes">{cita.notas}</p>}
+            <div className="agenda-calendar-actions">
+              <button type="button" className="btn btn-secondary btn-sm" onClick={() => moveMonth(-1)}>
+                Mes anterior
+              </button>
+              <button type="button" className="btn btn-secondary btn-sm" onClick={goToToday}>
+                Hoy
+              </button>
+              <button type="button" className="btn btn-secondary btn-sm" onClick={() => moveMonth(1)}>
+                Mes siguiente
+              </button>
+            </div>
+          </div>
+
+          <div className="agenda-calendar-weekdays">
+            {['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'].map(day => (
+              <span key={day}>{day}</span>
+            ))}
+          </div>
+
+          <div className="agenda-calendar-grid">
+            {calendarDays.map(day => {
+              const dayKey = getDateKey(day)
+              const citasDia = citasPorDia.get(dayKey) ?? []
+              const isCurrentMonth = isSameMonth(day, currentMonth)
+              const isToday = dayKey === todayKey
+              const isSelected = dayKey === selectedDateKey
+
+              return (
+                <button
+                  key={dayKey}
+                  type="button"
+                  className={`agenda-day-cell ${isCurrentMonth ? '' : 'is-outside-month'} ${isToday ? 'is-today' : ''} ${isSelected ? 'is-selected' : ''}`}
+                  onClick={() => handleSelectDate(day)}
+                >
+                  <div className="agenda-day-cell-header">
+                    <span className="agenda-day-number">{day.getDate()}</span>
+                    {citasDia.length > 0 && <span className="agenda-day-count">{citasDia.length}</span>}
                   </div>
-                </div>
 
-                <div className="paciente-actions">
-                  {paciente && (
-                    <button
-                      className="btn btn-secondary btn-sm"
-                      onClick={() => navigate(`/paciente/${paciente.id}`)}
-                    >
-                      Ver expediente
-                    </button>
-                  )}
-                  <button className="btn btn-secondary btn-sm" onClick={() => handleEdit(cita.id)}>
-                    Editar
-                  </button>
-                  <button
-                    className="btn btn-secondary btn-sm"
-                    onClick={() => void handleCreateGoogleEvent(cita.id)}
-                    disabled={!backendOnline || !googleStatus?.authenticated || creatingGoogleEventId === cita.id}
-                  >
-                    {creatingGoogleEventId === cita.id ? 'Creando evento...' : 'Google Calendar'}
-                  </button>
-                  <button
-                    className="btn btn-danger btn-sm"
-                    onClick={() => {
-                      if (confirm('¿Eliminar esta cita?')) {
-                        setDeletingAppointmentId(cita.id)
-                        void eliminarCita(cita.id).finally(() =>
-                          setDeletingAppointmentId(current => (current === cita.id ? null : current)),
-                        )
-                      }
-                    }}
-                    disabled={deletingAppointmentId === cita.id}
-                  >
-                    {deletingAppointmentId === cita.id ? 'Eliminando...' : 'Eliminar'}
-                  </button>
-                </div>
-              </article>
-            )
-          })}
+                  <div className="agenda-day-events">
+                    {citasDia.slice(0, 3).map(cita => {
+                      const paciente = pacientesMap.get(cita.pacienteId)
+                      return (
+                        <span key={cita.id} className={`agenda-day-event status-${cita.estado}`}>
+                          <strong>{formatHora(cita.fechaHora)}</strong> {paciente?.nombre ?? 'Paciente'}
+                        </span>
+                      )
+                    })}
+
+                    {citasDia.length > 3 && (
+                      <span className="agenda-day-more">+{citasDia.length - 3} más</span>
+                    )}
+                  </div>
+                </button>
+              )
+            })}
+          </div>
         </div>
-      )}
+
+        <aside className="card agenda-day-panel">
+          <div className="agenda-day-panel-header">
+            <div>
+              <h3>{formatFechaLarga(selectedDate)}</h3>
+              <p className="page-subtitle">
+                {citasDiaSeleccionado.length === 0
+                  ? 'No hay citas para este día con los filtros actuales.'
+                  : `${citasDiaSeleccionado.length} cita${citasDiaSeleccionado.length === 1 ? '' : 's'} registradas.`}
+              </p>
+            </div>
+
+            <button
+              type="button"
+              className="btn btn-primary btn-sm"
+              onClick={() => {
+                setEditingId(null)
+                setForm({
+                  ...EMPTY_CITA_FORM,
+                  fechaHora: `${selectedDateKey}T09:00`,
+                })
+                setShowForm(true)
+              }}
+            >
+              Agendar aquí
+            </button>
+          </div>
+
+          {citasDiaSeleccionado.length === 0 ? (
+            <div className="empty-state agenda-day-empty">
+              <p>No hay citas para mostrar en esta fecha.</p>
+            </div>
+          ) : (
+            <div className="agenda-list">
+              {citasDiaSeleccionado.map(cita => {
+                const paciente = pacientesMap.get(cita.pacienteId)
+
+                return (
+                  <article key={cita.id} className="agenda-item agenda-item-compact">
+                    <div className="agenda-item-main">
+                      <div className="agenda-item-copy">
+                        <div className="agenda-item-header">
+                          <h3>{paciente?.nombre ?? 'Paciente sin registro'}</h3>
+                          <span className={`agenda-status status-${cita.estado}`}>{cita.estado}</span>
+                        </div>
+                        <p className="agenda-item-time">{formatFechaHora(cita.fechaHora)}</p>
+                        <p className="agenda-item-motivo">{cita.motivo}</p>
+                        {cita.notas && <p className="agenda-item-notes">{cita.notas}</p>}
+                      </div>
+                    </div>
+
+                    <div className="paciente-actions">
+                      {paciente && (
+                        <button
+                          className="btn btn-secondary btn-sm"
+                          onClick={() => navigate(`/paciente/${paciente.id}`)}
+                        >
+                          Ver expediente
+                        </button>
+                      )}
+                      <button className="btn btn-secondary btn-sm" onClick={() => handleEdit(cita.id)}>
+                        Editar
+                      </button>
+                      <button
+                        className="btn btn-secondary btn-sm"
+                        onClick={() => void handleCreateGoogleEvent(cita.id)}
+                        disabled={!backendOnline || !googleStatus?.authenticated || creatingGoogleEventId === cita.id}
+                      >
+                        {creatingGoogleEventId === cita.id ? 'Creando evento...' : 'Google Calendar'}
+                      </button>
+                      <button
+                        className="btn btn-danger btn-sm"
+                        onClick={() => {
+                          if (confirm('¿Eliminar esta cita?')) {
+                            setDeletingAppointmentId(cita.id)
+                            void eliminarCita(cita.id).finally(() =>
+                              setDeletingAppointmentId(current => (current === cita.id ? null : current)),
+                            )
+                          }
+                        }}
+                        disabled={deletingAppointmentId === cita.id}
+                      >
+                        {deletingAppointmentId === cita.id ? 'Eliminando...' : 'Eliminar'}
+                      </button>
+                    </div>
+                  </article>
+                )
+              })}
+            </div>
+          )}
+        </aside>
+      </section>
 
       <div className="agenda-note">
         Si el backend está activo y las variables de entorno en Render tienen las credenciales correctas, ya

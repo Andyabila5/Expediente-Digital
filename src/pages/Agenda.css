@@ -138,6 +138,169 @@
   min-width: 180px;
 }
 
+.agenda-calendar-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(320px, 0.95fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+.agenda-calendar-card,
+.agenda-day-panel {
+  min-height: 100%;
+}
+
+.agenda-calendar-header,
+.agenda-day-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.85rem;
+  margin-bottom: 0.85rem;
+  flex-wrap: wrap;
+}
+
+.agenda-calendar-header h3,
+.agenda-day-panel-header h3 {
+  font-size: 1rem;
+  color: var(--color-text);
+  text-transform: capitalize;
+}
+
+.agenda-calendar-actions {
+  display: flex;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+}
+
+.agenda-calendar-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0.45rem;
+  margin-bottom: 0.45rem;
+}
+
+.agenda-calendar-weekdays span {
+  text-align: center;
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  padding: 0.25rem 0;
+}
+
+.agenda-calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0.45rem;
+}
+
+.agenda-day-cell {
+  min-height: 132px;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: var(--color-surface-strong);
+  padding: 0.55rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.2s, transform 0.1s, box-shadow 0.2s, background 0.2s;
+}
+
+.agenda-day-cell:hover {
+  border-color: var(--color-border-strong);
+  box-shadow: var(--shadow-soft);
+}
+
+.agenda-day-cell.is-selected {
+  border-color: var(--color-accent);
+  background: rgba(232, 226, 217, 0.75);
+  box-shadow: 0 0 0 1px rgba(136, 124, 111, 0.22);
+}
+
+.agenda-day-cell.is-today .agenda-day-number {
+  background: var(--color-accent);
+  color: var(--color-surface);
+}
+
+.agenda-day-cell.is-outside-month {
+  opacity: 0.62;
+}
+
+.agenda-day-cell-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.agenda-day-number {
+  width: 1.8rem;
+  height: 1.8rem;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.agenda-day-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.4rem;
+  height: 1.4rem;
+  padding: 0 0.35rem;
+  border-radius: 999px;
+  background: var(--color-accent-soft);
+  color: var(--color-text);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.agenda-day-events {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-height: 0;
+}
+
+.agenda-day-event,
+.agenda-day-more {
+  display: block;
+  width: 100%;
+  padding: 0.3rem 0.42rem;
+  border-radius: 7px;
+  font-size: 0.72rem;
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.agenda-day-event strong {
+  font-weight: 700;
+}
+
+.agenda-day-more {
+  background: var(--color-surface);
+  border: 1px dashed var(--color-border);
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+.agenda-day-panel {
+  position: sticky;
+  top: 1rem;
+}
+
+.agenda-day-empty {
+  padding: 1rem 0.5rem;
+}
+
 .agenda-list {
   display: grid;
   gap: 0.85rem;
@@ -147,6 +310,14 @@
   display: flex;
   flex-direction: column;
   gap: 0.85rem;
+  padding: 0.95rem;
+  border-radius: 10px;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-soft);
+}
+
+.agenda-item-compact {
+  gap: 0.7rem;
 }
 
 .agenda-item-main {
@@ -269,7 +440,42 @@
     grid-template-columns: 1fr;
   }
 
+  .agenda-calendar-layout,
   .whatsapp-status-grid {
     grid-template-columns: 1fr;
+  }
+
+  .agenda-day-panel {
+    position: static;
+  }
+}
+
+@media (max-width: 780px) {
+  .agenda-calendar-grid,
+  .agenda-calendar-weekdays {
+    gap: 0.35rem;
+  }
+
+  .agenda-day-cell {
+    min-height: 110px;
+    padding: 0.45rem;
+  }
+
+  .agenda-calendar-actions {
+    width: 100%;
+  }
+}
+
+@media (max-width: 640px) {
+  .agenda-calendar-weekdays {
+    display: none;
+  }
+
+  .agenda-calendar-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .agenda-day-cell {
+    min-height: auto;
   }
 }
