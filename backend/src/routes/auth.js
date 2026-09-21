@@ -1,11 +1,11 @@
 import { Router } from 'express'
 import { verifyCredentials } from '../services/authService.js'
-import { cookieOptions } from '../middleware/requireAuth.js'
+import { requireAuth, cookieOptions } from '../middleware/requireAuth.js'
 import { logAudit } from '../services/auditService.js'
 
 const router = Router()
 
-// POST /api/auth/login
+// POST /api/auth/login — pública, no requiere sesión
 router.post('/login', async (request, response, next) => {
   try {
     const { username, password } = request.body ?? {}
@@ -26,15 +26,12 @@ router.post('/login', async (request, response, next) => {
   }
 })
 
-// POST /api/auth/logout
-router.post('/logout', (request, response) => {
-  const username = request.user?.username ?? request.cookies?.auth_token ?? 'unknown'
-
+// POST /api/auth/logout — requiere sesión válida
+router.post('/logout', requireAuth, (request, response) => {
   response.clearCookie('auth_token', cookieOptions())
 
-  // Registrar logout de manera best-effort (no bloquea la respuesta si falla)
   logAudit({
-    username,
+    username: request.user.username,
     action: 'logout',
     ip: request.ip,
     userAgent: request.headers['user-agent'],
@@ -43,9 +40,8 @@ router.post('/logout', (request, response) => {
   response.json({ ok: true })
 })
 
-// GET /api/auth/me — permite al frontend validar la sesión al arrancar
-router.get('/me', (request, response) => {
-  // requireAuth ya habrá corrido antes de llegar aquí (aplicado en index.js)
+// GET /api/auth/me — requiere sesión válida
+router.get('/me', requireAuth, (request, response) => {
   response.json({ ok: true, username: request.user.username })
 })
 
