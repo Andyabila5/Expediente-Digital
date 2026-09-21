@@ -73,7 +73,7 @@ const corsOptions = {
 }
 
 // Responder al preflight OPTIONS en todas las rutas antes de cualquier middleware
-app.options('*', cors(corsOptions))
+app.options('/{*path}', cors(corsOptions))
 app.use(cors(corsOptions))
 app.use(cookieParser())
 app.use(express.json())
