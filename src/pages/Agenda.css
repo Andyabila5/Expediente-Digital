@@ -140,19 +140,19 @@
 .agenda-day-cell:hover {
   border-color: var(--color-accent);
   background: var(--color-surface);
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.08);
+  box-shadow: 0 0 0 3px rgba(139, 126, 200, 0.1);
 }
 
 .agenda-day-cell.is-selected {
   border-color: var(--color-accent);
   background: var(--color-accent-soft);
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  box-shadow: 0 0 0 3px rgba(139, 126, 200, 0.12);
 }
 
 .agenda-day-cell.is-today .agenda-day-number {
   background: var(--color-accent);
   color: #fff;
-  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.4);
+  box-shadow: 0 2px 6px rgba(139, 126, 200, 0.45);
 }
 
 .agenda-day-cell.is-outside-month {
@@ -404,9 +404,9 @@
 }
 
 .status-completada {
-  background: #f0f9ff;
-  color: #0369a1;
-  border: 1px solid #bae6fd;
+  background: #f0eeff;
+  color: #5b4fa8;
+  border: 1px solid #d8d0f5;
 }
 
 .status-cancelada {
@@ -418,7 +418,7 @@
 /* Status chips inside calendar cells */
 .agenda-day-event.status-programada  { background: var(--color-accent-soft); color: var(--color-accent-strong); }
 .agenda-day-event.status-confirmada  { background: var(--color-success-bg); color: var(--color-success-text); }
-.agenda-day-event.status-completada  { background: #e0f2fe; color: #0369a1; }
+.agenda-day-event.status-completada  { background: #f0eeff; color: #5b4fa8; }
 .agenda-day-event.status-cancelada   { background: var(--color-danger-bg); color: var(--color-danger-text); }
 
 /* ─── Item details ────────────────────────────────────────────────────────── */
