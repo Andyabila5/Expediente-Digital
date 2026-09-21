@@ -27,14 +27,19 @@ export function requireAuth(request, response, next) {
 
 /**
  * Opciones de cookie compartidas entre login y logout.
+ *
+ * En producción el frontend y el backend viven en dominios distintos
+ * (Vercel vs Render), por lo que la cookie debe ser SameSite=None + Secure
+ * para que el navegador la envíe en peticiones cross-site.
+ * En desarrollo (mismo origen, HTTP) se usa SameSite=Lax sin Secure.
  */
 export function cookieOptions() {
   const isProduction = process.env.NODE_ENV === 'production'
   return {
-    httpOnly: true,          // no accesible desde JavaScript
-    secure: isProduction,    // solo HTTPS en producción
-    sameSite: 'strict',      // bloquea CSRF cross-site
-    maxAge: 8 * 60 * 60 * 1000, // 8 horas en ms (debe coincidir con JWT_EXPIRY)
+    httpOnly: true,
+    secure: isProduction,              // HTTPS obligatorio en producción
+    sameSite: isProduction ? 'none' : 'lax', // 'none' permite cross-site en prod
+    maxAge: 8 * 60 * 60 * 1000,       // 8 horas en ms
     path: '/',
   }
 }

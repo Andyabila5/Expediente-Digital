@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-   "homepage": "https://andyabila5.github.io/Expediente-digital",
+  "homepage": "https://andyabila5.github.io/Expediente-digital",
   "scripts": {
     "dev": "vite",
     "backend:dev": "npm run dev --prefix backend",
@@ -21,6 +21,8 @@
     "vite": "^8.0.12"
   },
   "dependencies": {
+    "bcrypt": "^6.0.0",
+    "bcryptjs": "^3.0.3",
     "jspdf": "^4.2.1",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
