@@ -5,46 +5,6 @@
   margin-bottom: 1rem;
 }
 
-.whatsapp-panel {
-  margin-bottom: 1rem;
-}
-
-.confirmation-panel {
-  margin-bottom: 1rem;
-  border: 1px solid rgba(58, 102, 74, 0.18);
-  background: linear-gradient(180deg, rgba(171, 202, 183, 0.14) 0%, rgba(255, 255, 255, 0.94) 100%);
-}
-
-.confirmation-panel-copy {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 0.75rem;
-  margin-bottom: 0.85rem;
-  flex-wrap: wrap;
-}
-
-.confirmation-panel-copy h3 {
-  font-size: 1rem;
-  color: var(--color-text);
-  margin-bottom: 0.2rem;
-}
-
-.whatsapp-panel-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 0.75rem;
-  margin-bottom: 0.85rem;
-  flex-wrap: wrap;
-}
-
-.whatsapp-panel-header h3 {
-  font-size: 1rem;
-  color: var(--color-text);
-  margin-bottom: 0.2rem;
-}
-
 .integration-badge {
   display: inline-flex;
   align-items: center;
@@ -62,34 +22,6 @@
 .integration-badge.offline {
   background: var(--color-danger-bg);
   color: var(--color-danger-text);
-}
-
-.whatsapp-status-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.75rem;
-  margin-bottom: 0.85rem;
-}
-
-.whatsapp-status-item {
-  background: var(--color-surface-strong);
-  border: 1px solid var(--color-border);
-  border-radius: 8px;
-  padding: 0.8rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
-.whatsapp-status-item span {
-  font-size: 0.78rem;
-  color: var(--color-text-muted);
-}
-
-.whatsapp-status-item strong {
-  font-size: 0.9rem;
-  color: var(--color-text);
-  word-break: break-word;
 }
 
 .whatsapp-feedback {
@@ -322,6 +254,29 @@
   padding: 1rem 0.5rem;
 }
 
+.agenda-day-tools {
+  margin-bottom: 0.95rem;
+  padding: 0.85rem;
+  border-radius: 10px;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-soft);
+}
+
+.agenda-day-tools-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.agenda-day-tools-header h4 {
+  font-size: 0.95rem;
+  color: var(--color-text);
+  margin-bottom: 0.2rem;
+}
+
 .agenda-list {
   display: grid;
   gap: 0.85rem;
@@ -461,8 +416,7 @@
     grid-template-columns: 1fr;
   }
 
-  .agenda-calendar-layout,
-  .whatsapp-status-grid {
+  .agenda-calendar-layout {
     grid-template-columns: 1fr;
   }
 

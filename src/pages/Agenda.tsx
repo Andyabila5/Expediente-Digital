@@ -55,13 +55,6 @@ interface PendingWhatsappConfirmation {
   pacienteNombre: string
 }
 
-interface RecentWhatsappPrompt {
-  citaId: string
-  pacienteNombre: string
-  fechaHora: string
-  telefonoDisponible: boolean
-}
-
 function addMinutes(isoDateTime: string, minutes: number) {
   const date = new Date(isoDateTime)
   date.setMinutes(date.getMinutes() + minutes)
@@ -170,7 +163,6 @@ export default function Agenda() {
   const [openingWhatsappId, setOpeningWhatsappId] = useState<string | null>(null)
   const [pendingWhatsappConfirmation, setPendingWhatsappConfirmation] =
     useState<PendingWhatsappConfirmation | null>(null)
-  const [recentWhatsappPrompt, setRecentWhatsappPrompt] = useState<RecentWhatsappPrompt | null>(null)
   const [agendaMessage, setAgendaMessage] = useState('')
 
   const pacientesMap = useMemo(
@@ -405,7 +397,6 @@ export default function Agenda() {
 
       if (editingId) {
         await actualizarCita(editingId, payload)
-        setRecentWhatsappPrompt(null)
         setAgendaMessage('La cita se actualizó correctamente.')
       } else {
         const createdCita = await agregarCita(payload)
@@ -415,15 +406,9 @@ export default function Agenda() {
 
         setCurrentMonth(new Date(citaDate.getFullYear(), citaDate.getMonth(), 1))
         setSelectedDateKey(getDateKeyFromIso(createdCita.fechaHora))
-        setRecentWhatsappPrompt({
-          citaId: createdCita.id,
-          pacienteNombre: paciente?.nombre ?? 'Paciente',
-          fechaHora: createdCita.fechaHora,
-          telefonoDisponible: Boolean(phone),
-        })
         setAgendaMessage(
           phone
-            ? `La cita de ${paciente?.nombre ?? 'Paciente'} fue creada. Ya puedes confirmarla por WhatsApp.`
+            ? `La cita de ${paciente?.nombre ?? 'Paciente'} fue creada. Ya puedes confirmarla desde el calendario.`
             : `La cita fue creada, pero el expediente no tiene un número válido para WhatsApp.`,
         )
       }
@@ -568,96 +553,6 @@ export default function Agenda() {
           <strong>{resumen.mes}</strong>
         </div>
       </div>
-
-      {recentWhatsappPrompt && (
-        <section className="card confirmation-panel">
-          <div className="confirmation-panel-copy">
-            <div>
-              <h3>Confirmar cita</h3>
-              <p className="page-subtitle">
-                {recentWhatsappPrompt.pacienteNombre} quedó agendado para{' '}
-                {formatFechaHora(recentWhatsappPrompt.fechaHora)}.
-              </p>
-            </div>
-            <span
-              className={`integration-badge ${recentWhatsappPrompt.telefonoDisponible ? 'online' : 'offline'}`}
-            >
-              {recentWhatsappPrompt.telefonoDisponible ? 'WhatsApp listo' : 'Sin número válido'}
-            </span>
-          </div>
-
-          <p
-            className={`whatsapp-feedback ${recentWhatsappPrompt.telefonoDisponible ? 'success' : 'error'}`}
-          >
-            {recentWhatsappPrompt.telefonoDisponible
-              ? 'Abre WhatsApp Web para enviar el recordatorio con la fecha y la hora de la cita.'
-              : 'Agrega o corrige el teléfono en el expediente del paciente para poder enviar la confirmación.'}
-          </p>
-
-          <div className="form-actions agenda-form-actions">
-            <button
-              type="button"
-              className="btn btn-primary"
-              onClick={() => void handleOpenWhatsapp(recentWhatsappPrompt.citaId)}
-              disabled={!recentWhatsappPrompt.telefonoDisponible || openingWhatsappId === recentWhatsappPrompt.citaId}
-            >
-              {openingWhatsappId === recentWhatsappPrompt.citaId ? 'Abriendo WhatsApp...' : 'Confirmar cita por WhatsApp'}
-            </button>
-            <button
-              type="button"
-              className="btn btn-secondary"
-              onClick={() => setRecentWhatsappPrompt(null)}
-            >
-              Cerrar
-            </button>
-          </div>
-        </section>
-      )}
-
-      <section className="card whatsapp-panel">
-        <div className="whatsapp-panel-header">
-          <div>
-            <h3>Google Calendar</h3>
-            <p className="page-subtitle">Autentica tu cuenta y crea eventos desde cada cita.</p>
-          </div>
-          <span className={`integration-badge ${googleStatus?.authenticated ? 'online' : 'offline'}`}>
-            {googleStatus?.authenticated ? 'Google conectado' : 'Google pendiente'}
-          </span>
-        </div>
-
-        <div className="whatsapp-status-grid">
-          <div className="whatsapp-status-item">
-            <span>Credenciales</span>
-            <strong>{googleStatus?.configured ? 'Configuradas' : 'Pendientes'}</strong>
-          </div>
-          <div className="whatsapp-status-item">
-            <span>Autenticación</span>
-            <strong>{googleStatus?.authenticated ? 'Completa' : 'Falta iniciar sesión'}</strong>
-          </div>
-          <div className="whatsapp-status-item">
-            <span>Calendario</span>
-            <strong>{googleStatus?.calendarId || 'Sin definir'}</strong>
-          </div>
-        </div>
-
-        <p
-          className={`whatsapp-feedback ${googleStatus?.authenticated ? 'success' : googleStatus?.configured ? 'warning' : 'error'
-            }`}
-        >
-          {googleMessage}
-        </p>
-
-        <div className="form-actions agenda-form-actions">
-          <button
-            type="button"
-            className="btn btn-primary"
-            onClick={() => void handleGoogleAuth()}
-            disabled={!backendOnline || !googleStatus?.configured || openingGoogleAuth}
-          >
-            {openingGoogleAuth ? 'Abriendo...' : 'Conectar Google Calendar'}
-          </button>
-        </div>
-      </section>
 
       {showForm && (
         <form className="card form-card" onSubmit={handleSubmit}>
@@ -865,6 +760,35 @@ export default function Agenda() {
               Agendar aquí
             </button>
           </div>
+
+          <section className="agenda-day-tools">
+            <div className="agenda-day-tools-header">
+              <div>
+                <h4>Google Calendar</h4>
+                <p className="page-subtitle">Conecta tu cuenta y crea eventos desde cada cita del día.</p>
+              </div>
+              <span className={`integration-badge ${googleStatus?.authenticated ? 'online' : 'offline'}`}>
+                {googleStatus?.authenticated ? 'Google conectado' : 'Google pendiente'}
+              </span>
+            </div>
+
+            <p
+              className={`whatsapp-feedback ${googleStatus?.authenticated ? 'success' : googleStatus?.configured ? 'warning' : 'error'}`}
+            >
+              {googleMessage}
+            </p>
+
+            <div className="form-actions agenda-form-actions">
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm"
+                onClick={() => void handleGoogleAuth()}
+                disabled={!backendOnline || !googleStatus?.configured || openingGoogleAuth}
+              >
+                {openingGoogleAuth ? 'Abriendo...' : 'Conectar Google Calendar'}
+              </button>
+            </div>
+          </section>
 
           {citasDiaSeleccionado.length === 0 ? (
             <div className="empty-state agenda-day-empty">
