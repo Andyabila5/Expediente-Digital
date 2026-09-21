@@ -65,10 +65,16 @@ function handleSingleUpload(fieldName) {
 }
 
 // ─── Global middleware ─────────────────────────────────────────────────────
-app.use(cors({
+const corsOptions = {
   origin: env.frontendUrl,
-  credentials: true, // necesario para que el navegador envíe cookies
-}))
+  credentials: true,           // necesario para que el navegador envíe cookies
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+}
+
+// Responder al preflight OPTIONS en todas las rutas antes de cualquier middleware
+app.options('*', cors(corsOptions))
+app.use(cors(corsOptions))
 app.use(cookieParser())
 app.use(express.json())
 
