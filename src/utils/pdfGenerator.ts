@@ -293,10 +293,28 @@ export function generarSolicitudLaboratorio(data: SolicitudLaboratorioData): voi
     doc.rect(ML, rowY, COL1_W, ROW_H)
     doc.rect(ML + COL1_W, rowY, CW - COL1_W, ROW_H)
     const ty = rowY + ROW_H * 0.68
-    doc.setFont('helvetica', 'bold');   doc.text(label1, ML + 1.5, ty)
-    doc.setFont('helvetica', 'normal'); doc.text(value1, ML + 1.5 + doc.getTextWidth(label1 + ' '), ty)
-    doc.setFont('helvetica', 'bold');   doc.text(label2, ML + COL1_W + 1.5, ty)
-    doc.setFont('helvetica', 'normal'); doc.text(value2, ML + COL1_W + 1.5 + doc.getTextWidth(label2 + ' '), ty)
+
+    // Label 1
+    doc.setFont('helvetica', 'bold')
+    doc.setTextColor(0, 0, 0)
+    doc.text(label1, ML + 1.5, ty)
+    const label1W = doc.getTextWidth(label1)
+
+    // Value 1
+    doc.setFont('helvetica', 'normal')
+    doc.setTextColor(0, 0, 0)
+    doc.text(value1, ML + 1.5 + label1W + 1.5, ty)
+
+    // Label 2
+    doc.setFont('helvetica', 'bold')
+    doc.setTextColor(0, 0, 0)
+    doc.text(label2, ML + COL1_W + 1.5, ty)
+    const label2W = doc.getTextWidth(label2)
+
+    // Value 2
+    doc.setFont('helvetica', 'normal')
+    doc.setTextColor(0, 0, 0)
+    doc.text(value2, ML + COL1_W + 1.5 + label2W + 1.5, ty)
   }
 
   drawInfoRow('Nombre del paciente:', data.paciente.nombre ?? '', 'Teléfono:', data.paciente.telefono ?? '', y)
@@ -380,6 +398,9 @@ export function generarSolicitudLaboratorio(data: SolicitudLaboratorioData): voi
         doc.setLineWidth(0.2)
         doc.line(cx, cy, cx + COL_CONTENT_W, cy)
         cy += 3.5  // espacio generoso antes del primer ítem
+        // Resetear a normal para los ítems siguientes
+        doc.setFont('helvetica', 'normal')
+        doc.setTextColor(0, 0, 0)
       }
 
       // ── Ítems de la categoría ────────────────────────────────────────
@@ -403,10 +424,10 @@ export function generarSolicitudLaboratorio(data: SolicitudLaboratorioData): voi
           doc.text('x', cx + 0.5, cy - 0.2)
         }
 
-        // Texto del examen
+        // Texto del examen — siempre negro, sin importar si está seleccionado
         doc.setFontSize(FS_ITEM)
         doc.setFont('helvetica', 'normal')
-        doc.setTextColor(20, 20, 20)
+        doc.setTextColor(0, 0, 0)
         const textX = cx + CB + 1.2
 
         labelLines.forEach((line, li) => {
