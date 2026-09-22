@@ -293,10 +293,10 @@ export function generarSolicitudLaboratorio(data: SolicitudLaboratorioData): voi
     doc.rect(ML, rowY, COL1_W, ROW_H)
     doc.rect(ML + COL1_W, rowY, CW - COL1_W, ROW_H)
     const ty = rowY + ROW_H * 0.68
-    doc.setFont('helvetica', 'bold');  doc.text(label1, ML + 1.5, ty)
-    doc.setFont('helvetica', 'normal'); doc.text(value1, ML + 1.5 + doc.getTextWidth(label1) + 1, ty)
-    doc.setFont('helvetica', 'bold');  doc.text(label2, ML + COL1_W + 1.5, ty)
-    doc.setFont('helvetica', 'normal'); doc.text(value2, ML + COL1_W + 1.5 + doc.getTextWidth(label2) + 1, ty)
+    doc.setFont('helvetica', 'bold');   doc.text(label1, ML + 1.5, ty)
+    doc.setFont('helvetica', 'normal'); doc.text(value1, ML + 1.5 + doc.getTextWidth(label1 + ' '), ty)
+    doc.setFont('helvetica', 'bold');   doc.text(label2, ML + COL1_W + 1.5, ty)
+    doc.setFont('helvetica', 'normal'); doc.text(value2, ML + COL1_W + 1.5 + doc.getTextWidth(label2 + ' '), ty)
   }
 
   drawInfoRow('Nombre del paciente:', data.paciente.nombre ?? '', 'Teléfono:', data.paciente.telefono ?? '', y)
@@ -338,12 +338,12 @@ export function generarSolicitudLaboratorio(data: SolicitudLaboratorioData): voi
   const colHeight = (colIdx: number): number => {
     let h = 0
     COLUMNAS_SOLICITUD[colIdx].categorias.forEach(cat => {
-      if (cat.titulo) h += FS_LABEL * 0.6 + 3.5  // título + separador
+      if (cat.titulo) h += FS_LABEL * 0.6 + 2 + 3.5  // texto + gap + línea + espacio
       cat.examenes.forEach(ex => {
         const lines = doc.splitTextToSize(ex, COL_CONTENT_W - CB - 1.5) as string[]
         h += lines.length * LH_ITEM
       })
-      h += 2 // espacio entre categorías
+      h += 2
     })
     return h
   }
@@ -374,12 +374,12 @@ export function generarSolicitudLaboratorio(data: SolicitudLaboratorioData): voi
         doc.setFont('helvetica', 'bold')
         doc.setTextColor(0, 0, 0)
         doc.text(cat.titulo, cx, cy)
-        cy += 1.5
+        cy += 2
         // Línea separadora debajo del título
         doc.setDrawColor(0, 0, 0)
         doc.setLineWidth(0.2)
         doc.line(cx, cy, cx + COL_CONTENT_W, cy)
-        cy += 2
+        cy += 3.5  // espacio generoso antes del primer ítem
       }
 
       // ── Ítems de la categoría ────────────────────────────────────────
