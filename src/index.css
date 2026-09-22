@@ -31,13 +31,13 @@
   --color-accent-border: #e0cdb3;
 
   /* Sidebar */
-  --color-sidebar-bg: #3a2e22;
-  --color-sidebar-text: #f0ebe2;
-  --color-sidebar-muted: #b0a090;
-  --color-sidebar-active-bg: rgba(181, 149, 106, 0.22);
-  --color-sidebar-active-text: #e8d4b8;
-  --color-sidebar-hover-bg: rgba(255, 255, 255, 0.07);
-  --color-sidebar-border: rgba(255, 255, 255, 0.08);
+  --color-sidebar-bg: #e8dfd0;
+  --color-sidebar-text: #3a3028;
+  --color-sidebar-muted: #7a6e62;
+  --color-sidebar-active-bg: rgba(181, 149, 106, 0.2);
+  --color-sidebar-active-text: #7a5c38;
+  --color-sidebar-hover-bg: rgba(181, 149, 106, 0.12);
+  --color-sidebar-border: rgba(180, 160, 130, 0.3);
 
   /* Danger — rosa durazno pastel */
   --color-danger-bg: #fceee8;

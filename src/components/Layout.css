@@ -13,7 +13,7 @@
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  border-right: 1px solid var(--color-sidebar-border);
+  border-right: 1px solid var(--color-border-strong);
   position: sticky;
   top: 0;
   height: 100vh;
@@ -98,7 +98,7 @@
 }
 
 .sidebar-logout {
-  background: transparent;
+  background: rgba(181, 149, 106, 0.15);
   color: var(--color-sidebar-muted);
   border: 1px solid var(--color-sidebar-border);
   flex-shrink: 0;
@@ -107,9 +107,9 @@
 }
 
 .sidebar-logout:hover:not(:disabled) {
-  background: var(--color-sidebar-hover-bg);
-  color: var(--color-sidebar-text);
-  border-color: rgba(255, 255, 255, 0.18);
+  background: rgba(181, 149, 106, 0.28);
+  color: var(--color-text);
+  border-color: var(--color-accent-border);
 }
 
 /* ─── Nav section ─────────────────────────────────────────────────────────── */
