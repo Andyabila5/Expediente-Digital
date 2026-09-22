@@ -260,7 +260,6 @@ export function generarSolicitudLaboratorio(data: SolicitudLaboratorioData): voi
   const FS_CLINIC  = 11
   const FS_LABEL   = 7.5   // categoría
   const FS_ITEM    = 7     // nombre del examen
-  const LH_ITEM    = 4.6   // interlineado entre ítems
 
   // ── Header ──────────────────────────────────────────────────────────────
   let y = MT + 3
