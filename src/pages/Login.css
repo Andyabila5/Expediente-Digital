@@ -3,12 +3,11 @@
   display: grid;
   place-items: center;
   padding: 1.5rem;
-  background: linear-gradient(135deg, #2d2640 0%, #1e1a2e 60%, #2a2040 100%);
+  background: linear-gradient(135deg, #3a2e22 0%, #2a2018 60%, #4a3828 100%);
   position: relative;
   overflow: hidden;
 }
 
-/* Decorative circles */
 .login-shell::before,
 .login-shell::after {
   content: '';
@@ -20,7 +19,7 @@
 .login-shell::before {
   width: 600px;
   height: 600px;
-  background: radial-gradient(circle, rgba(139, 126, 200, 0.18) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(181, 149, 106, 0.18) 0%, transparent 70%);
   top: -150px;
   right: -150px;
 }
@@ -28,7 +27,7 @@
 .login-shell::after {
   width: 400px;
   height: 400px;
-  background: radial-gradient(circle, rgba(185, 160, 210, 0.12) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(210, 185, 145, 0.12) 0%, transparent 70%);
   bottom: -100px;
   left: -100px;
 }
@@ -37,14 +36,13 @@
   width: min(100%, 420px);
   padding: 2.25rem;
   border-radius: 16px;
-  background: #ffffff;
+  background: var(--color-surface);
   border: 1px solid var(--color-border);
   box-shadow: var(--shadow-lg);
   position: relative;
   z-index: 1;
 }
 
-/* Brand mark at top */
 .login-brand {
   display: flex;
   align-items: center;
@@ -61,7 +59,7 @@
   align-items: center;
   justify-content: center;
   font-size: 1.2rem;
-  box-shadow: 0 4px 12px rgba(139, 126, 200, 0.4);
+  box-shadow: 0 4px 12px rgba(181, 149, 106, 0.4);
 }
 
 .login-brand-name {
@@ -82,7 +80,7 @@
   padding: 0.25rem 0.65rem;
   border-radius: 999px;
   background: var(--color-accent-soft);
-  color: var(--color-accent);
+  color: var(--color-accent-strong);
   font-size: 0.75rem;
   font-weight: 600;
   margin-bottom: 0.75rem;
@@ -114,7 +112,7 @@
   margin-bottom: 0;
   background: var(--color-danger-bg);
   color: var(--color-danger-text);
-  border-color: #fecaca;
+  border-color: #f0c8b8;
 }
 
 .login-submit {

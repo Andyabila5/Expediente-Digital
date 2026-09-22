@@ -140,19 +140,19 @@
 .agenda-day-cell:hover {
   border-color: var(--color-accent);
   background: var(--color-surface);
-  box-shadow: 0 0 0 3px rgba(139, 126, 200, 0.1);
+  box-shadow: 0 0 0 3px rgba(181, 149, 106, 0.12);
 }
 
 .agenda-day-cell.is-selected {
   border-color: var(--color-accent);
   background: var(--color-accent-soft);
-  box-shadow: 0 0 0 3px rgba(139, 126, 200, 0.12);
+  box-shadow: 0 0 0 3px rgba(181, 149, 106, 0.15);
 }
 
 .agenda-day-cell.is-today .agenda-day-number {
   background: var(--color-accent);
   color: #fff;
-  box-shadow: 0 2px 6px rgba(139, 126, 200, 0.45);
+  box-shadow: 0 2px 6px rgba(181, 149, 106, 0.5);
 }
 
 .agenda-day-cell.is-outside-month {
@@ -192,13 +192,12 @@
   font-weight: 700;
 }
 
-/* ─── Day events (chips inside calendar cells) ────────────────────────────── */
+/* ─── Day events (chips) ──────────────────────────────────────────────────── */
 
 .agenda-day-events {
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
-  min-height: 0;
 }
 
 .agenda-day-event,
@@ -237,7 +236,7 @@
   padding: 1.5rem 0.75rem;
 }
 
-/* ─── Google Calendar tools section ──────────────────────────────────────── */
+/* ─── Google Calendar tools ───────────────────────────────────────────────── */
 
 .agenda-day-tools {
   margin-bottom: 1rem;
@@ -288,13 +287,13 @@
 .integration-badge.online {
   background: var(--color-success-bg);
   color: var(--color-success-text);
-  border: 1px solid #bbf7d0;
+  border: 1px solid #c0dfc8;
 }
 
 .integration-badge.offline {
   background: var(--color-danger-bg);
   color: var(--color-danger-text);
-  border: 1px solid #fecaca;
+  border: 1px solid #f0c8b8;
 }
 
 /* ─── Feedback messages ───────────────────────────────────────────────────── */
@@ -311,19 +310,19 @@
 .whatsapp-feedback.success {
   background: var(--color-success-bg);
   color: var(--color-success-text);
-  border-color: #bbf7d0;
+  border-color: #c0dfc8;
 }
 
 .whatsapp-feedback.warning {
   background: var(--color-warning-bg);
   color: var(--color-warning-text);
-  border-color: #fef08a;
+  border-color: #f0dfa0;
 }
 
 .whatsapp-feedback.error {
   background: var(--color-danger-bg);
   color: var(--color-danger-text);
-  border-color: #fecaca;
+  border-color: #f0c8b8;
 }
 
 /* ─── Appointment list ────────────────────────────────────────────────────── */
@@ -346,12 +345,10 @@
 
 .agenda-item:hover {
   box-shadow: var(--shadow-md);
-  border-color: var(--color-border-strong);
+  border-color: var(--color-accent-border);
 }
 
-.agenda-item-compact {
-  gap: 0.6rem;
-}
+.agenda-item-compact { gap: 0.6rem; }
 
 .agenda-item-main {
   display: flex;
@@ -400,51 +397,34 @@
 .status-confirmada {
   background: var(--color-success-bg);
   color: var(--color-success-text);
-  border: 1px solid #bbf7d0;
+  border: 1px solid #c0dfc8;
 }
 
 .status-completada {
-  background: #f0eeff;
-  color: #5b4fa8;
-  border: 1px solid #d8d0f5;
+  background: #f0ece4;
+  color: #6a5840;
+  border: 1px solid #d8cfc0;
 }
 
 .status-cancelada {
   background: var(--color-danger-bg);
   color: var(--color-danger-text);
-  border: 1px solid #fecaca;
+  border: 1px solid #f0c8b8;
 }
 
 /* Status chips inside calendar cells */
-.agenda-day-event.status-programada  { background: var(--color-accent-soft); color: var(--color-accent-strong); }
-.agenda-day-event.status-confirmada  { background: var(--color-success-bg); color: var(--color-success-text); }
-.agenda-day-event.status-completada  { background: #f0eeff; color: #5b4fa8; }
-.agenda-day-event.status-cancelada   { background: var(--color-danger-bg); color: var(--color-danger-text); }
+.agenda-day-event.status-programada { background: var(--color-accent-soft); color: var(--color-accent-strong); }
+.agenda-day-event.status-confirmada { background: var(--color-success-bg); color: var(--color-success-text); }
+.agenda-day-event.status-completada { background: #f0ece4; color: #6a5840; }
+.agenda-day-event.status-cancelada  { background: var(--color-danger-bg); color: var(--color-danger-text); }
 
 /* ─── Item details ────────────────────────────────────────────────────────── */
 
-.agenda-item-time {
-  font-size: 0.8rem;
-  color: var(--color-text-subtle);
-  margin-bottom: 0.2rem;
-  font-weight: 500;
-}
+.agenda-item-time   { font-size: 0.8rem; color: var(--color-text-subtle); margin-bottom: 0.2rem; font-weight: 500; }
+.agenda-item-motivo { font-size: 0.9rem; color: var(--color-text); font-weight: 500; }
+.agenda-item-notes  { font-size: 0.82rem; color: var(--color-text-muted); margin-top: 0.2rem; }
 
-.agenda-item-motivo {
-  font-size: 0.9rem;
-  color: var(--color-text);
-  font-weight: 500;
-}
-
-.agenda-item-notes {
-  font-size: 0.82rem;
-  color: var(--color-text-muted);
-  margin-top: 0.2rem;
-}
-
-.agenda-form-actions {
-  gap: 0.5rem;
-}
+.agenda-form-actions { gap: 0.5rem; }
 
 .agenda-note {
   margin-top: 1.25rem;
@@ -458,45 +438,20 @@
 /* ─── Responsive ──────────────────────────────────────────────────────────── */
 
 @media (max-width: 900px) {
-  .agenda-summary {
-    grid-template-columns: 1fr;
-  }
-
-  .agenda-calendar-layout {
-    grid-template-columns: 1fr;
-  }
-
-  .agenda-day-panel {
-    position: static;
-  }
+  .agenda-summary { grid-template-columns: 1fr; }
+  .agenda-calendar-layout { grid-template-columns: 1fr; }
+  .agenda-day-panel { position: static; }
 }
 
 @media (max-width: 780px) {
   .agenda-calendar-grid,
-  .agenda-calendar-weekdays {
-    gap: 0.3rem;
-  }
-
-  .agenda-day-cell {
-    min-height: 90px;
-    padding: 0.4rem;
-  }
-
-  .agenda-calendar-actions {
-    width: 100%;
-  }
+  .agenda-calendar-weekdays { gap: 0.3rem; }
+  .agenda-day-cell { min-height: 90px; padding: 0.4rem; }
+  .agenda-calendar-actions { width: 100%; }
 }
 
 @media (max-width: 640px) {
-  .agenda-calendar-weekdays {
-    display: none;
-  }
-
-  .agenda-calendar-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .agenda-day-cell {
-    min-height: auto;
-  }
+  .agenda-calendar-weekdays { display: none; }
+  .agenda-calendar-grid { grid-template-columns: 1fr; }
+  .agenda-day-cell { min-height: auto; }
 }

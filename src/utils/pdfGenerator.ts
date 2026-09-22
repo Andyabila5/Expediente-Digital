@@ -234,3 +234,218 @@ export function generarExpedientePDF({ paciente, pruebas, laboratorios }: Expedi
   const nombreArchivo = `expediente-${paciente.nombre.replace(/\s+/g, '-').toLowerCase()}.pdf`
   doc.save(nombreArchivo)
 }
+
+// ─── Solicitud de Análisis de Laboratorio ────────────────────────────────────
+
+import { COLUMNAS_SOLICITUD } from '../constants/laboratorioSolicitud'
+
+export interface SolicitudLaboratorioData {
+  paciente: Pick<Paciente, 'nombre' | 'cedula' | 'telefono'>
+  sexo: string
+  diagnostico: string
+  seleccionados: Set<string>
+}
+
+export function generarSolicitudLaboratorio(data: SolicitudLaboratorioData): void {
+  const doc = new jsPDF()
+
+  const PW = 210
+  const PH = 297
+  const ML = 10  // margin left
+  const MR = 10  // margin right
+  const MT = 10  // margin top
+  const CW = PW - ML - MR  // content width
+
+  let y = MT
+
+  // ── Header ──────────────────────────────────────────────────────────────
+  // Clínica (top right)
+  doc.setFontSize(11)
+  doc.setFont('helvetica', 'bold')
+  doc.setTextColor(0, 0, 0)
+  doc.text('NOVA UROCLÍNICA', PW - MR, y + 2, { align: 'right' })
+
+  // Title
+  y += 9
+  doc.setFontSize(15)
+  doc.setFont('helvetica', 'bold')
+  doc.setTextColor(100, 100, 100)
+  doc.text('Solicitud De Análisis De Laboratorio', PW / 2, y, { align: 'center' })
+
+  // ── Patient info box ─────────────────────────────────────────────────────
+  y += 7
+  const boxX = ML
+  const boxW = CW
+  const rowH = 7
+  const col1W = 70
+  const col2W = boxW - col1W
+
+  doc.setDrawColor(0, 0, 0)
+  doc.setLineWidth(0.3)
+
+  // Row 1: Nombre | Teléfono
+  doc.rect(boxX, y, col1W, rowH)
+  doc.rect(boxX + col1W, y, col2W, rowH)
+  doc.setFontSize(8)
+  doc.setFont('helvetica', 'bold')
+  doc.setTextColor(0, 0, 0)
+  doc.text('Nombre del paciente:', boxX + 1.5, y + 4.8)
+  doc.setFont('helvetica', 'normal')
+  doc.text(data.paciente.nombre ?? '', boxX + 33, y + 4.8)
+  doc.setFont('helvetica', 'bold')
+  doc.text('Teléfono:', boxX + col1W + 1.5, y + 4.8)
+  doc.setFont('helvetica', 'normal')
+  doc.text(data.paciente.telefono ?? '', boxX + col1W + 18, y + 4.8)
+
+  y += rowH
+
+  // Row 2: Cédula | Sexo
+  doc.rect(boxX, y, col1W, rowH)
+  doc.rect(boxX + col1W, y, col2W, rowH)
+  doc.setFont('helvetica', 'bold')
+  doc.text('Cédula:', boxX + 1.5, y + 4.8)
+  doc.setFont('helvetica', 'normal')
+  doc.text(data.paciente.cedula ?? '', boxX + 15, y + 4.8)
+  doc.setFont('helvetica', 'bold')
+  doc.text('Sexo:', boxX + col1W + 1.5, y + 4.8)
+  doc.setFont('helvetica', 'normal')
+  doc.text(data.sexo, boxX + col1W + 12, y + 4.8)
+
+  y += rowH
+
+  // Row 3: Diagnóstico (full width, 2 rows)
+  doc.rect(boxX, y, boxW, rowH)
+  doc.setFont('helvetica', 'bold')
+  doc.text('Diagnóstico:', boxX + 1.5, y + 4.8)
+  doc.setFont('helvetica', 'normal')
+  const diagLines = doc.splitTextToSize(data.diagnostico ?? '', boxW - 28) as string[]
+  doc.text(diagLines[0] ?? '', boxX + 24, y + 4.8)
+
+  y += rowH
+  doc.rect(boxX, y, boxW, rowH)
+  if (diagLines[1]) doc.text(diagLines[1], boxX + 1.5, y + 4.8)
+
+  y += rowH + 6
+
+  // ── 3-column exam grid ───────────────────────────────────────────────────
+  const NUM_COLS = 3
+  const COL_GAP = 3
+  const EXAM_CW = (CW - COL_GAP * (NUM_COLS - 1)) / NUM_COLS
+  const COL_XS = [
+    ML,
+    ML + EXAM_CW + COL_GAP,
+    ML + (EXAM_CW + COL_GAP) * 2,
+  ]
+
+  const GRID_TOP = y
+  const CHECKBOX_SIZE = 2.5
+  const LINE_H = 4.4
+  const CAT_LABEL_H = 5.5
+
+  // Draw outer border for each column
+  // We'll calculate column heights as we render
+
+  // Render all 3 columns
+  COLUMNAS_SOLICITUD.forEach((col, colIdx) => {
+    let cy = GRID_TOP
+    const cx = COL_XS[colIdx]
+
+    col.categorias.forEach(cat => {
+      // Category title
+      if (cat.titulo) {
+        doc.setFontSize(7)
+        doc.setFont('helvetica', 'bold')
+        doc.setTextColor(0, 0, 0)
+        doc.text(cat.titulo, cx, cy + 3.5)
+        cy += CAT_LABEL_H
+
+        // Underline
+        doc.setDrawColor(0, 0, 0)
+        doc.setLineWidth(0.2)
+        doc.line(cx, cy - 1, cx + EXAM_CW, cy - 1)
+      }
+
+      // Exam items
+      cat.examenes.forEach(examen => {
+        const isChecked = data.seleccionados.has(examen)
+
+        // Checkbox square
+        doc.setDrawColor(0, 0, 0)
+        doc.setLineWidth(0.25)
+        doc.rect(cx, cy - CHECKBOX_SIZE + 0.5, CHECKBOX_SIZE, CHECKBOX_SIZE)
+
+        // Check mark if selected
+        if (isChecked) {
+          doc.setFont('helvetica', 'bold')
+          doc.setFontSize(7)
+          doc.setTextColor(0, 0, 0)
+          doc.text('✓', cx + 0.3, cy + 0.2)
+        }
+
+        // Exam label — wrap if needed
+        doc.setFont('helvetica', 'normal')
+        doc.setFontSize(6.8)
+        doc.setTextColor(20, 20, 20)
+
+        const labelX = cx + CHECKBOX_SIZE + 1.2
+        const labelW = EXAM_CW - CHECKBOX_SIZE - 1.5
+        const labelLines = doc.splitTextToSize(examen, labelW) as string[]
+        doc.text(labelLines, labelX, cy)
+        cy += labelLines.length * LINE_H
+      })
+
+      cy += 2 // gap between categories
+    })
+  })
+
+  // Calculate max column bottom for outer border
+  const colBottoms = COLUMNAS_SOLICITUD.map((col, _colIdx) => {
+    let cy = GRID_TOP
+    col.categorias.forEach(cat => {
+      if (cat.titulo) cy += CAT_LABEL_H
+      cat.examenes.forEach(examen => {
+        const labelW = EXAM_CW - CHECKBOX_SIZE - 1.5
+        const lines = doc.splitTextToSize(examen, labelW) as string[]
+        cy += lines.length * LINE_H
+      })
+      cy += 2
+    })
+    return cy
+  })
+
+  const maxBottom = Math.max(...colBottoms)
+  const gridBottom = Math.min(maxBottom + 4, PH - 35)
+
+  // Outer border around all 3 columns
+  doc.setDrawColor(0, 0, 0)
+  doc.setLineWidth(0.3)
+  doc.rect(ML, GRID_TOP - 2, CW, gridBottom - GRID_TOP + 2)
+
+  // Vertical dividers between columns
+  doc.line(COL_XS[1] - COL_GAP / 2, GRID_TOP - 2, COL_XS[1] - COL_GAP / 2, gridBottom)
+  doc.line(COL_XS[2] - COL_GAP / 2, GRID_TOP - 2, COL_XS[2] - COL_GAP / 2, gridBottom)
+
+  // ── Doctor footer ────────────────────────────────────────────────────────
+  const footerY = Math.max(gridBottom + 8, PH - 38)
+
+  doc.setFontSize(9)
+  doc.setFont('helvetica', 'bold')
+  doc.setTextColor(150, 150, 150)
+  doc.text(DOCTOR_INFO.nombre, PW - MR, footerY, { align: 'right' })
+
+  doc.setFontSize(7.5)
+  doc.setFont('helvetica', 'normal')
+  doc.text(`ESPECIALISTA ${DOCTOR_INFO.especialidad.replace('ESPECIALISTA EN ', '')}`, PW - MR, footerY + 5, { align: 'right' })
+  doc.text(`CÓDIGO ${DOCTOR_INFO.codigo}`, PW - MR, footerY + 10, { align: 'right' })
+
+  // Signature line
+  const sigY = footerY + 22
+  doc.setDrawColor(180, 180, 180)
+  doc.setLineWidth(0.3)
+  doc.line(PW - MR - 55, sigY, PW - MR, sigY)
+  doc.setFontSize(7)
+  doc.setTextColor(180, 180, 180)
+  doc.text('Firma y sello del médico', PW - MR, sigY + 4, { align: 'right' })
+
+  doc.save(`solicitud-laboratorio-${(data.paciente.nombre ?? 'paciente').replace(/\s+/g, '-').toLowerCase()}.pdf`)
+}

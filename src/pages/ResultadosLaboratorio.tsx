@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useExpediente } from '../context/ExpedienteContext'
 import { API_BASE_URL } from '../config'
 import type { ResultadoLaboratorio, ResultadoLaboratorioFormData } from '../types'
+import SolicitudLaboratorio from '../components/SolicitudLaboratorio'
 import './Resultados.css'
 
 const emptyForm = (): ResultadoLaboratorioFormData => ({
@@ -39,6 +40,8 @@ export default function ResultadosLaboratorio() {
   const [archivo, setArchivo] = useState<File | null>(null)
   const [guardando, setGuardando] = useState(false)
   const [eliminandoId, setEliminandoId] = useState<string | null>(null)
+  const [showSolicitud, setShowSolicitud] = useState(false)
+  const [solicitudPacienteId, setSolicitudPacienteId] = useState<string | undefined>(undefined)
 
   const resultadosFiltrados = filtroPaciente
     ? resultadosLaboratorio.filter(r => r.pacienteId === filtroPaciente)
@@ -104,13 +107,25 @@ export default function ResultadosLaboratorio() {
           <h2>Resultados de Laboratorio</h2>
           <p className="page-subtitle">Registra y consulta análisis de laboratorio</p>
         </div>
-        <button
-          className="btn btn-primary"
-          onClick={abrirNuevo}
-          disabled={pacientes.length === 0}
-        >
-          {showForm && !editingId ? 'Cancelar' : '+ Nuevo Resultado'}
-        </button>
+        <div className="header-actions">
+          <button
+            className="btn btn-secondary"
+            onClick={() => {
+              setSolicitudPacienteId(filtroPaciente || undefined)
+              setShowSolicitud(true)
+            }}
+            disabled={pacientes.length === 0}
+          >
+            📋 Generar Solicitud
+          </button>
+          <button
+            className="btn btn-primary"
+            onClick={abrirNuevo}
+            disabled={pacientes.length === 0}
+          >
+            {showForm && !editingId ? 'Cancelar' : '+ Nuevo Resultado'}
+          </button>
+        </div>
       </div>
 
       {error && <div className="alert">{error}</div>}
@@ -254,6 +269,16 @@ export default function ResultadosLaboratorio() {
                     <div className="acciones-cell">
                       <button
                         className="btn btn-secondary btn-sm"
+                        onClick={() => {
+                          setSolicitudPacienteId(r.pacienteId)
+                          setShowSolicitud(true)
+                        }}
+                        title="Generar solicitud de laboratorio para este paciente"
+                      >
+                        📋 Solicitud
+                      </button>
+                      <button
+                        className="btn btn-secondary btn-sm"
                         onClick={() => iniciarEdicion(r)}
                       >
                         Editar
@@ -280,6 +305,14 @@ export default function ResultadosLaboratorio() {
             </tbody>
           </table>
         </div>
+      )}
+      
+      {showSolicitud && (
+        <SolicitudLaboratorio
+          pacientes={pacientes}
+          pacienteIdInicial={solicitudPacienteId}
+          onClose={() => setShowSolicitud(false)}
+        />
       )}
     </div>
   )
