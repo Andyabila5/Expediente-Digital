@@ -337,39 +337,81 @@ export function generarSolicitudLaboratorio(data: SolicitudLaboratorioData): voi
   y += ROW_H + 5
 
   // ── 3-column exam grid ────────────────────────────────────────────────────
-  // Columnas con padding interno para que el texto no toque el borde
   const DIVIDER_X1 = ML + CW / 3
   const DIVIDER_X2 = ML + (CW / 3) * 2
 
-  // Posición X del contenido de cada columna (con padding de 2mm)
   const PAD = 2.5
-  const COL_CONTENT_W = CW / 3 - PAD * 2   // ancho disponible para texto
+  const COL_CONTENT_W = CW / 3 - PAD * 2
   const COL_XS = [ML + PAD, DIVIDER_X1 + PAD, DIVIDER_X2 + PAD]
 
-  // Tamaño del checkbox: un cuadrado pequeño alineado con la línea de texto
-  const CB = 2.8   // lado del cuadrado
-  const CB_OFFSET_Y = -CB + 0.4  // desplazamiento vertical relativo al baseline del texto
+  const CB = 2.8
+  const CB_OFFSET_Y = -CB + 0.4
+  const LH_ITEM = 4.3   // reducido para que todo quepa
+  const CAT_SPACE = 1.5 // espacio entre categorías
 
   const GRID_TOP = y
+  const PAGE_SAFE_BOTTOM = PH - 38 // reserva para el footer
 
-  // Función que calcula la altura total de una columna (para el borde exterior)
-  const colHeight = (colIdx: number): number => {
-    let h = 0
-    COLUMNAS_SOLICITUD[colIdx].categorias.forEach(cat => {
-      if (cat.titulo) h += FS_LABEL * 0.6 + 2 + 3.5  // texto + gap + línea + espacio
-      cat.examenes.forEach(ex => {
-        const lines = doc.splitTextToSize(ex, COL_CONTENT_W - CB - 1.5) as string[]
-        h += lines.length * LH_ITEM
+  // ── Renderizar las 3 columnas y registrar hasta dónde llega cada una ──
+  const colBottomY: number[] = []
+
+  COLUMNAS_SOLICITUD.forEach((col, colIdx) => {
+    let cy = GRID_TOP + 3
+    const cx = COL_XS[colIdx]
+    const maxLabelW = COL_CONTENT_W - CB - 1.5
+
+    col.categorias.forEach(cat => {
+      if (cat.titulo) {
+        doc.setFontSize(FS_LABEL)
+        doc.setFont('helvetica', 'bold')
+        doc.setTextColor(0, 0, 0)
+        doc.text(cat.titulo, cx, cy)
+        cy += 2
+        doc.setDrawColor(0, 0, 0)
+        doc.setLineWidth(0.2)
+        doc.line(cx, cy, cx + COL_CONTENT_W, cy)
+        cy += 3.5
+        doc.setFont('helvetica', 'normal')
+        doc.setTextColor(0, 0, 0)
+      }
+
+      cat.examenes.forEach(examen => {
+        const labelLines = doc.splitTextToSize(examen, maxLabelW) as string[]
+        const cbTop = cy + CB_OFFSET_Y
+
+        doc.setDrawColor(0, 0, 0)
+        doc.setLineWidth(0.22)
+        doc.rect(cx, cbTop, CB, CB)
+
+        if (data.seleccionados.has(examen)) {
+          doc.setFontSize(6)
+          doc.setFont('helvetica', 'bold')
+          doc.setTextColor(0, 0, 0)
+          doc.text('x', cx + 0.5, cy - 0.2)
+        }
+
+        doc.setFontSize(FS_ITEM)
+        doc.setFont('helvetica', 'normal')
+        doc.setTextColor(0, 0, 0)
+        const textX = cx + CB + 1.2
+        labelLines.forEach((line, li) => {
+          doc.text(line, textX, cy + li * LH_ITEM)
+        })
+
+        cy += labelLines.length * LH_ITEM
       })
-      h += 2
+
+      cy += CAT_SPACE
     })
-    return h
-  }
 
-  const maxH   = Math.max(colHeight(0), colHeight(1), colHeight(2))
-  const GRID_H = Math.min(maxH + 6, PH - y - 38)
+    colBottomY.push(cy)
+  })
 
-  // Borde exterior del grid
+  // La altura real del grid es la columna más larga, limitada al fondo seguro
+  const realBottom = Math.min(Math.max(...colBottomY) + 3, PAGE_SAFE_BOTTOM)
+  const GRID_H = realBottom - GRID_TOP
+
+  // Borde exterior
   doc.setDrawColor(0, 0, 0)
   doc.setLineWidth(0.35)
   doc.rect(ML, GRID_TOP, CW, GRID_H)
@@ -378,68 +420,6 @@ export function generarSolicitudLaboratorio(data: SolicitudLaboratorioData): voi
   doc.setLineWidth(0.25)
   doc.line(DIVIDER_X1, GRID_TOP, DIVIDER_X1, GRID_TOP + GRID_H)
   doc.line(DIVIDER_X2, GRID_TOP, DIVIDER_X2, GRID_TOP + GRID_H)
-
-  // Renderizar cada columna
-  COLUMNAS_SOLICITUD.forEach((col, colIdx) => {
-    let cy = GRID_TOP + 3   // padding superior dentro del grid
-    const cx = COL_XS[colIdx]
-    const maxLabelW = COL_CONTENT_W - CB - 1.5
-
-    col.categorias.forEach(cat => {
-      // ── Título de categoría ──────────────────────────────────────────
-      if (cat.titulo) {
-        doc.setFontSize(FS_LABEL)
-        doc.setFont('helvetica', 'bold')
-        doc.setTextColor(0, 0, 0)
-        doc.text(cat.titulo, cx, cy)
-        cy += 2
-        // Línea separadora debajo del título
-        doc.setDrawColor(0, 0, 0)
-        doc.setLineWidth(0.2)
-        doc.line(cx, cy, cx + COL_CONTENT_W, cy)
-        cy += 3.5  // espacio generoso antes del primer ítem
-        // Resetear a normal para los ítems siguientes
-        doc.setFont('helvetica', 'normal')
-        doc.setTextColor(0, 0, 0)
-      }
-
-      // ── Ítems de la categoría ────────────────────────────────────────
-      cat.examenes.forEach(examen => {
-        const labelLines = doc.splitTextToSize(examen, maxLabelW) as string[]
-
-        // El checkbox se alinea con la primera línea de texto.
-        // baseline de la primera línea = cy
-        // checkbox top = cy + CB_OFFSET_Y  (justo arriba del baseline)
-        const cbTop = cy + CB_OFFSET_Y
-
-        doc.setDrawColor(0, 0, 0)
-        doc.setLineWidth(0.22)
-        doc.rect(cx, cbTop, CB, CB)
-
-        // Tilde si está seleccionado
-        if (data.seleccionados.has(examen)) {
-          doc.setFontSize(6)
-          doc.setFont('helvetica', 'bold')
-          doc.setTextColor(0, 0, 0)
-          doc.text('x', cx + 0.5, cy - 0.2)
-        }
-
-        // Texto del examen — siempre negro, sin importar si está seleccionado
-        doc.setFontSize(FS_ITEM)
-        doc.setFont('helvetica', 'normal')
-        doc.setTextColor(0, 0, 0)
-        const textX = cx + CB + 1.2
-
-        labelLines.forEach((line, li) => {
-          doc.text(line, textX, cy + li * LH_ITEM)
-        })
-
-        cy += labelLines.length * LH_ITEM
-      })
-
-      cy += 2  // espacio entre categorías
-    })
-  })
 
   // ── Doctor footer ────────────────────────────────────────────────────────
   const footerY = GRID_TOP + GRID_H + 8
